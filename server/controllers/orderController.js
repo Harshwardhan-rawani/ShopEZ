@@ -1,4 +1,5 @@
 const { Order } = require('../models/Order');
+const { Product } = require('../models/Product');
 const axios = require('axios');
 
 exports.createAfterPayment = async (req, res) => {
@@ -10,11 +11,34 @@ exports.createAfterPayment = async (req, res) => {
     }
     const order = await Order.create({
       ...req.body.order,
-      status: 'paid'
+      status: 'pending',
+      paymentStatus: 'paid'
     });
     res.status(201).json(order);
   } catch (err) {
     res.status(500).json({ message: 'Order creation failed', error: err });
+  }
+};
+
+// Update order status
+exports.updateOrderStatus = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status } = req.body;
+    
+    const order = await Order.findByIdAndUpdate(
+      orderId,
+      { status },
+      { new: true }
+    );
+    
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    
+    res.json(order);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update order status', error: err });
   }
 };
 
@@ -66,21 +90,20 @@ exports.getUserOrders = async (req, res) => {
   }
 };
 
+// GET /api/orders?sellerId=xxx
 exports.getAll = async (req, res) => {
   try {
-    const orders = await Order.find();
+    let filter = {};
+    if (req.query.sellerId) {
+      // Find all products for this seller
+      const sellerProducts = await Product.find({ sellerId: req.query.sellerId }).select('_id');
+      const productIds = sellerProducts.map(p => p._id.toString());
+      filter['items.product'] = { $in: productIds };
+    }
+    const orders = await Order.find(filter);
     res.json(orders);
   } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch orders', error: err });
+    res.status(500).json({ message: 'Failed to fetch orders', error: err.message });
   }
 };
- 
 
-exports.getAll = async (req, res) => {
-  try {
-    const orders = await Order.find();
-    res.json(orders);
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch orders', error: err });
-  }
-};

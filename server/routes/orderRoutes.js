@@ -6,5 +6,6 @@ router.post('/create-after-payment', orderController.createAfterPayment);
 router.post('/cashfree', orderController.createCashfreeSession);
 router.get('/user', orderController.getUserOrders);
 router.get('/', orderController.getAll);
+router.put('/:orderId/status', orderController.updateOrderStatus);
 
 module.exports = router;

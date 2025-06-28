@@ -4,20 +4,24 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router'
 import { useApp } from '../App'
-import { Star, ShoppingCart, Heart, Share2, Truck, Shield, ArrowLeft } from 'lucide-react'
+import { Star, ShoppingCart, Heart, Share2, Truck, Shield, ArrowLeft, IndianRupee } from 'lucide-react'
 import axios from 'axios'
+import { formatCurrency } from '../lib/currency'
+import ReviewSection from '../components/ReviewSection'
 
 interface Product {
   id: string | number;
-  title: string;
+  name: string;
   price: number;
   images: string[];
   description: string;
   category: string;
-  rating: number;
+  ratings: number;
   stock?: number;
   discount?: number;
   brand?: string;
+  sellerId?: string;
+  reviews?: any[];
 }
 
 export default function ProductDetail() {
@@ -27,14 +31,21 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<'description' | 'specifications' | 'reviews'>('description');
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [count,setcount] = useState(0);
+
+  const fetchProduct = async () => {
+    if (id) {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/products/${id}`);
+        setProduct(response.data);
+      } catch (error) {
+        console.error('Failed to fetch product:', error);
+      }
+    }
+  };
 
   useEffect(() => {
-    if (id) {
-      axios.get(`https://dummyjson.com/products/${id}`)
-        .then(res => {
-          setProduct(res.data);
-        });
-    }
+    fetchProduct();
   }, [id]);
 
   // Check if product is in wishlist on mount
@@ -50,10 +61,17 @@ export default function ProductDetail() {
   const handleAddToCart = () => {
     if (product) {
       addToCart({
-        ...product,
-        name: product.title,
+        id: String(product.id),
+        name: product.name,
+        price: product.price,
         image: product.images?.[0] || '',
-        quantity
+        description: product.description,
+        category: product.category,
+        rating: product.ratings,
+        reviews: product.reviews?.length || 0,
+        sellerId: product.sellerId || '',
+        brand: product.brand || '',
+        discount: product.discount
       });
     }
   };
@@ -74,7 +92,7 @@ export default function ProductDetail() {
   const handleShare = () => {
     if (navigator.share && product) {
       navigator.share({
-        title: product.title,
+        title: product.name,
         text: product.description,
         url: window.location.href
       });
@@ -95,13 +113,18 @@ export default function ProductDetail() {
       await axios.post(`${import.meta.env.VITE_API_URL}/api/users/${user.id}/wishlist`, {
         product: {
           id: product?.id,
-          title: product?.title,
+          name: product?.name,
           price: product?.price,
           image: product?.images?.[0] || '',
         }
       });
       setIsWishlisted(true);
     }
+  };
+
+  const handleReviewUpdate = () => {
+    // Refresh product data to get updated ratings
+    fetchProduct();
   };
 
   if (!product) {
@@ -125,7 +148,7 @@ export default function ProductDetail() {
         <span className="text-gray-500">/</span>
         <span className="text-gray-700">{product.category}</span>
         <span className="text-gray-500">/</span>
-        <span className="text-gray-900 font-medium">{product.title}</span>
+        <span className="text-gray-900 font-medium">{product.name}</span>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-12">
@@ -133,8 +156,8 @@ export default function ProductDetail() {
         <div className="space-y-4">
           <div className="relative">
             <img
-              src={product.images?.[0]}
-              alt={product.title}
+              src={product.images?.[count]}
+              alt={product.name}
               className="w-full h-96 object-cover rounded-lg shadow-lg"
             />
             {product.discount && (
@@ -148,8 +171,9 @@ export default function ProductDetail() {
             {product.images?.slice(0, 4).map((img, i) => (
               <img
                 key={i}
-                src={img}
-                alt={`${product.title} ${i + 1}`}
+                onClick={()=>{setcount(i)}}
+                src={product.images?.[i]}
+                alt={`${product.name} ${i + 1}`}
                 className="w-full h-20 object-cover rounded border-2 border-gray-200 hover:border-orange-500 cursor-pointer transition-colors"
               />
             ))}
@@ -159,7 +183,7 @@ export default function ProductDetail() {
         {/* Product Info */}
         <div className="space-y-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.title}</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
             <p className="text-gray-600">{product.brand} {product.category}</p>
           </div>
 
@@ -170,7 +194,7 @@ export default function ProductDetail() {
                 <Star
                   key={i}
                   className={`w-5 h-5 ${
-                    i < Math.floor(product.rating || 0)
+                    i < Math.floor(product.ratings || 0)
                       ? 'text-yellow-400 fill-current'
                       : 'text-gray-300'
                   }`}
@@ -178,21 +202,19 @@ export default function ProductDetail() {
               ))}
             </div>
             <span className="text-gray-600">
-              {product.rating} / 5
+              {product.ratings} / 5
             </span>
-            {product.stock !== undefined && (
-              <span className="ml-4 text-sm text-gray-500">Stock: {product.stock}</span>
-            )}
+        
           </div>
 
           {/* Price */}
           <div className="flex items-center space-x-4">
             <span className="text-4xl font-bold text-orange-500">
-              ${getFinalPrice().toFixed(2)}
+              {formatCurrency(getFinalPrice())}
             </span>
             {product.discount && (
               <span className="text-2xl text-gray-500 line-through">
-                ${product.price.toFixed(2)}
+                {formatCurrency(product.price)}
               </span>
             )}
           </div>
@@ -203,21 +225,11 @@ export default function ProductDetail() {
           {/* Quantity and Add to Cart */}
           <div className="space-y-4">
             <div className="flex items-center space-x-4">
-              <label className="text-sm font-medium text-gray-700">Quantity:</label>
+              <label className="text-sm font-medium text-gray-700">Stock :</label>
               <div className="flex items-center border border-gray-300 rounded-lg">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="px-3 py-2 text-gray-600 hover:text-gray-800"
-                >
-                  -
-                </button>
-                <span className="px-4 py-2 border-x border-gray-300">{quantity}</span>
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="px-3 py-2 text-gray-600 hover:text-gray-800"
-                >
-                  +
-                </button>
+             
+                <span className="px-4 py-2 ">{product.stock}</span>
+            
               </div>
             </div>
 
@@ -250,7 +262,7 @@ export default function ProductDetail() {
           <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
             <div className="flex items-center space-x-2">
               <Truck className="w-5 h-5 text-orange-500" />
-              <span className="text-sm text-gray-700">Free shipping on orders over $50</span>
+              <span className="text-sm text-gray-700">Free shipping on orders over ₹50</span>
             </div>
             <div className="flex items-center space-x-2">
               <Shield className="w-5 h-5 text-orange-500" />
@@ -260,14 +272,14 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* Product Details Tabs */}
-      <div className="mt-16">
+      {/* Product Tabs */}
+      <div className="mt-12">
         <div className="border-b border-gray-200">
           <nav className="flex space-x-8">
             {[
               { key: 'description', label: 'Description' },
               { key: 'specifications', label: 'Specifications' },
-              { key: 'reviews', label: `Reviews` }
+              { key: 'reviews', label: 'Reviews' }
             ].map(tab => (
               <button
                 key={tab.key}
@@ -284,60 +296,37 @@ export default function ProductDetail() {
           </nav>
         </div>
 
-        <div className="py-8">
+        <div className="mt-8">
           {activeTab === 'description' && (
             <div className="prose max-w-none">
-              <p className="text-gray-700 leading-relaxed mb-4">
-                {product.description}
-              </p>
+              <p className="text-gray-700 leading-relaxed">{product.description}</p>
             </div>
           )}
 
           {activeTab === 'specifications' && (
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="flex justify-between py-3 border-b border-gray-200">
-                <span className="font-medium text-gray-700">Brand:</span>
-                <span className="text-gray-600">{product.brand || '-'}</span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-gray-200">
-                <span className="font-medium text-gray-700">Category:</span>
-                <span className="text-gray-600">{product.category}</span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-gray-200">
-                <span className="font-medium text-gray-700">Stock:</span>
-                <span className="text-gray-600">{product.stock ?? '-'}</span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-gray-200">
-                <span className="font-medium text-gray-700">Discount:</span>
-                <span className="text-gray-600">{product.discount ? `${product.discount}%` : '-'}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="font-semibold mb-2">Product Details</h4>
+                <ul className="space-y-2 text-gray-600">
+                  <li><span className="font-medium">Brand:</span> {product.brand}</li>
+                  <li><span className="font-medium">Category:</span> {product.category}</li>
+                  <li><span className="font-medium">Stock:</span> {product.stock} units</li>
+                  {product.discount && (
+                    <li><span className="font-medium">Discount:</span> {product.discount}%</li>
+                  )}
+                </ul>
               </div>
             </div>
           )}
 
-        {activeTab === 'reviews' && (
-  <div className="space-y-6">
-    {product.reviews && product.reviews.length > 0 ? (
-      product.reviews.map((review, index) => (
-        <div key={index} className="border p-4 rounded-lg shadow-sm">
-          <div className="flex justify-between items-center mb-1">
-            <h4 className="text-sm font-semibold text-gray-800">{review.reviewerName}</h4>
-            <span className="text-xs text-gray-400">
-              {new Date(review.date).toLocaleDateString()}
-            </span>
-          </div>
-          <div className="flex items-center text-yellow-500 text-sm mb-1">
-            {'⭐'.repeat(review.rating)}{' '}
-            <span className="text-gray-500 ml-2">({review.rating}/5)</span>
-          </div>
-          <p className="text-gray-600 text-sm">{review.comment}</p>
-        </div>
-      ))
-    ) : (
-      <p className="text-gray-500 text-sm">No reviews available.</p>
-    )}
-  </div>
-)}
-
+          {activeTab === 'reviews' && (
+            <ReviewSection
+              productId={String(product.id)}
+              currentRating={product.ratings || 0}
+              reviewCount={product.reviews?.length || 0}
+              onReviewUpdate={handleReviewUpdate}
+            />
+          )}
         </div>
       </div>
     </div>

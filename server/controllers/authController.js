@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('../models/User');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
 
 exports.register = async (req, res) => {
   try {
@@ -9,7 +9,7 @@ exports.register = async (req, res) => {
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ message: 'User already exists with this email' });
     const user = await User.create({ firstName, lastName, email, phone, password, role });
-    const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+    const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '24h' });
     res.status(201).json({
       token,
       user: {
@@ -31,7 +31,7 @@ exports.login = async (req, res) => {
     if (!user) return res.status(401).json({ message: 'Invalid email or password' });
     const isValidPassword = await user.comparePassword(password);
     if (!isValidPassword) return res.status(401).json({ message: 'Invalid email or password' });
-    const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+    const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '24h' });
     res.json({
       token,
       user: {
@@ -53,7 +53,7 @@ exports.me = async (req, res) => {
       return res.status(401).json({ message: 'No token provided' });
     }
     const token = auth.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json({

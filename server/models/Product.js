@@ -1,17 +1,20 @@
 const mongoose = require('mongoose');
 
+// Remove the 'id' field and any unique index on slug or other fields not used
 const productSchema = new mongoose.Schema({
-  id:         { type: Number, unique: true, required: true },
-  title:      { type: String, required: true },
-  slug:       { type: String, required: true, unique: true },
-  price:      { type: Number, required: true },
-  description:{ type: String, required: true },
-  category:   { type: mongoose.Schema.Types.Mixed, required: true }, // can be object or string
-  images:     [{ type: String, required: true }],
-  creationAt: { type: Date, default: Date.now },
-  updatedAt:  { type: Date, default: Date.now },
-
+  name:      { type: String, required: true },
+  brand:     { type: String, required: true },
+  price:     { type: Number, required: true },
+  stock:     { type: Number, required: true },
+  images:    [{ type: String, required: true }],
+  description: { type: String },
+  discount:  { type: Number, default: 0 },
+  category:  { type: String },
+  reviews:   [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }],
+  ratings:   { type: Number, default: 0 },
+  sold:      { type: Number, default: 0 },
+  sellerId:  { type: String, required: true }
 }, { timestamps: true });
 
-const Product = mongoose.model('Product', productSchema);
-module.exports = { Product };
+exports.Product = mongoose.model('Product', productSchema);
+

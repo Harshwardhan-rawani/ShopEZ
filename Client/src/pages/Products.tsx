@@ -4,20 +4,22 @@
 import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { useApp } from '../App'
-import { Star, ShoppingCart, Filter, Grid, List } from 'lucide-react'
+import { Star, ShoppingCart, Filter, Grid, List, IndianRupee } from 'lucide-react'
 import axios from 'axios'
+import { formatCurrency } from '../lib/currency'
 
 interface Product {
-  id: string | number;
-  title: string;
+  id: string;
+  name: string;
   price: number;
+  sellerId: string;
   images: string[];
   description: string;
   category: string;
-  rating?: number;
-  reviews?: number;
-  discountPercentage?: number;
-  discount?: number;
+  ratings: number;
+  reviews: number;
+  discount: number;
+  brand?: string;
 }
 
 export default function Products() {
@@ -26,12 +28,11 @@ export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [sortBy, setSortBy] = useState('title');
+  const [sortBy, setSortBy] = useState('name');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
-
   const categories = [
   "All",
   "smartphones",
@@ -55,20 +56,23 @@ export default function Products() {
 
   useEffect(() => {
     setLoading(true);
-    // Fetch products from dummy e-commerce API
-    axios.get('https://dummyjson.com/products?limit=194')
+    // Fetch products from backend API instead of dummyjson
+    axios.get(`${import.meta.env.VITE_API_URL}/api/products`)
       .then(res => {
-        // Map dummyjson fields to local Product interface
-        const products = res.data.products.map((p: any) => ({
-          id: p.id,
-          title: p.title,
+        // Map backend fields to local Product interface
+        const products = res.data.map((p: any) => ({
+          id: p._id,
+          sellerId : p.sellerId,
+          name: p.name,
+          title: p.name, 
           price: p.price,
-          images: p.images,
+          images: p.images ? (Array.isArray(p.images) ? p.images : [p.images]) : [p.image],
           description: p.description,
           category: p.category,
-          rating: p.rating,
-          reviews: p.stock, // dummyjson does not have reviews, use stock as placeholder
-          discount: p.discountPercentage,
+          ratings: p.ratings || 0,
+          reviews: p.sold || 0,
+          discount: p.discount || 5,
+          brand: p.brand,
         }));
         setProducts(products);
         setLoading(false);
@@ -83,8 +87,9 @@ export default function Products() {
     const searchQuery = searchParams.get('search');
     if (searchQuery) {
       filtered = filtered.filter(product =>
-        product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchQuery.toLowerCase())
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.category.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
@@ -109,11 +114,11 @@ export default function Products() {
         case 'price-high':
           return b.price - a.price;
         case 'rating':
-          return (b.rating || 0) - (a.rating || 0);
+          return (b.ratings) - (a.ratings);
         case 'reviews':
-          return (b.reviews || 0) - (a.reviews || 0);
+          return (b.reviews) - (a.reviews);
         default:
-          return a.title.localeCompare(b.title);
+          return a.name.localeCompare(b.name);
       }
     });
 
@@ -123,12 +128,18 @@ export default function Products() {
   /**
    * 处理添加到购物车
    */
+  console.log('products', products)
+
   const handleAddToCart = (product: Product) => {
+    console.log('Adding to cart:', product);
     addToCart({
       ...product,
-      name: product.title,
+      name: product.name,
       image: product.images?.[0] || '',
-      quantity: 1
+      sellerId: product.sellerId || '',
+      brand: product.brand || '',
+      rating: product.ratings,
+      reviews: product.reviews
     });
   };
 
@@ -267,7 +278,7 @@ export default function Products() {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
-                <option value="title">Name</option>
+                <option value="name">Name</option>
                 <option value="price-low">Price: Low to High</option>
                 <option value="price-high">Price: High to Low</option>
                 <option value="rating">Rating</option>
@@ -297,17 +308,17 @@ export default function Products() {
                     <div className="relative">
                       <img
                         src={product.images?.[0]}
-                        alt={product.title}
+                        alt={product.name}
                         className="w-full h-48 object-cover"
                       />
-                      {product.discount && product.discount > 0 && (
+                      {product.discount > 0 && (
                         <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-sm">
                           {product.discount}% OFF
                         </div>
                       )}
                     </div>
                     <div className="p-6">
-                      <h3 className="text-lg font-semibold mb-2">{product.title}</h3>
+                      <h3 className="text-lg font-semibold mb-2">{product.name}</h3>
                       <p className="text-gray-600 text-sm mb-3 line-clamp-2">
                         {product.description}
                       </p>
@@ -317,7 +328,7 @@ export default function Products() {
                             <Star
                               key={i}
                               className={`w-4 h-4 ${
-                                i < Math.floor(product.rating || 0)
+                                i < Math.floor(product.ratings)
                                   ? 'text-yellow-400 fill-current'
                                   : 'text-gray-300'
                               }`}
@@ -325,19 +336,19 @@ export default function Products() {
                           ))}
                         </div>
                         <span className="text-sm text-gray-500 ml-2">
-                          ({product.reviews || 0})
+                          ({product.ratings})
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <span className="text-2xl font-bold text-orange-500">
-                            ${getFinalPrice(product).toFixed(2)}
+                          <span className="text-2xl font-bold text-orange-500 flex items-center">
+                            <IndianRupee/>{formatCurrency(getFinalPrice(product))}
                           </span>
-                          {product.discount && product.discount > 0 && (
-                            <span className="text-sm text-gray-500 line-through">
-                              ${product.price.toFixed(2)}
-                            </span>
-                          )}
+                        
+                            <span className="text-sm text-gray-500 line-through flex items-center ">
+                              <IndianRupee className='w-4'/>
+                              {formatCurrency(product.price)}
+                     </span>
                         </div>
                         <button
                           type="button"
@@ -363,10 +374,10 @@ export default function Products() {
                     <div className="w-48 h-32 relative">
                       <img
                         src={product.images?.[0]}
-                        alt={product.title}
+                        alt={product.name}
                         className="w-full h-full object-cover"
                       />
-                      {product.discount && product.discount > 0 && (
+                      {product.discount > 0 && (
                         <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-sm">
                           {product.discount}% OFF
                         </div>
@@ -375,7 +386,7 @@ export default function Products() {
                     <div className="flex-1 p-6">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
-                          <h3 className="text-xl font-semibold mb-2">{product.title}</h3>
+                          <h3 className="text-xl font-semibold mb-2">{product.name}</h3>
                           <p className="text-gray-600 mb-3">{product.description}</p>
 
                           <div className="flex items-center mb-3">
@@ -384,7 +395,7 @@ export default function Products() {
                                 <Star
                                   key={i}
                                   className={`w-4 h-4 ${
-                                    i < Math.floor(product.rating || 0)
+                                    i < Math.floor(product.ratings)
                                       ? 'text-yellow-400 fill-current'
                                       : 'text-gray-300'
                                   }`}
@@ -392,7 +403,7 @@ export default function Products() {
                               ))}
                             </div>
                             <span className="text-sm text-gray-500 ml-2">
-                              ({product.reviews || 0} reviews)
+                              ({product.reviews} reviews)
                             </span>
                           </div>
                         </div>
@@ -400,11 +411,11 @@ export default function Products() {
                         <div className="text-right">
                           <div className="flex items-center space-x-2 mb-4">
                             <span className="text-2xl font-bold text-orange-500">
-                              ${getFinalPrice(product).toFixed(2)}
+                              {formatCurrency(getFinalPrice(product))}
                             </span>
                             {product.discount && product.discount > 0 && (
                               <span className="text-sm text-gray-500 line-through">
-                                ${product.price.toFixed(2)}
+                                {formatCurrency(product.price)}
                               </span>
                             )}
                           </div>

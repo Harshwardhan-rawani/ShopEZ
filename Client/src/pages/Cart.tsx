@@ -3,9 +3,10 @@
  */
 import { Link } from 'react-router'
 import { useApp } from '../App'
-import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from 'lucide-react'
+import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, IndianRupee } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import { formatCurrency } from '../lib/currency'
 
 export default function Cart() {
   const { cart, updateCartQuantity, removeFromCart, promoApplied, setPromoApplied, promoCode, setPromoCode } = useApp();
@@ -128,7 +129,7 @@ export default function Cart() {
                     {item.name}
                   </h3>
                   <p className="text-gray-600 text-sm mb-2">
-                    Unit Price: ${item.price.toFixed(2)}
+                    Unit Price: {formatCurrency(item.price)}
                   </p>
                   
                   <div className="flex items-center space-x-4">
@@ -166,7 +167,7 @@ export default function Cart() {
                 {/* Item Total */}
                 <div className="text-right">
                   <p className="text-xl font-bold text-gray-800">
-                    ${(item.price * item.quantity).toFixed(2)}
+                    {formatCurrency(item.price * item.quantity)}
                   </p>
                 </div>
               </div>
@@ -182,35 +183,35 @@ export default function Cart() {
             <div className="space-y-4 mb-6">
               <div className="flex justify-between">
                 <span className="text-gray-600">Subtotal</span>
-                <span className="font-semibold">${getTotalPrice().toFixed(2)}</span>
+                <span className="font-semibold">{formatCurrency(getTotalPrice())}</span>
               </div>
               {promoApplied && (
                 <div className="flex justify-between text-green-600">
                   <span>Promo Discount</span>
-                  <span>- ${getDiscount().toFixed(2)}</span>
+                  <span>- {formatCurrency(getDiscount())}</span>
                 </div>
               )}
               <div className="flex justify-between">
                 <span className="text-gray-600">Shipping</span>
                 <span className="font-semibold">
-                  {getTotalPrice() - getDiscount() >= 50 ? 'Free' : '$9.99'}
+                  {getTotalPrice() - getDiscount() >= 50 ? 'Free' : formatCurrency(9.99)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Tax</span>
                 <span className="font-semibold">
-                  ${((getTotalPrice() - getDiscount()) * 0.08).toFixed(2)}
+                  {formatCurrency((getTotalPrice() - getDiscount()) * 0.08)}
                 </span>
               </div>
               <div className="border-t pt-4">
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
                   <span className="text-orange-500">
-                    ${(
+                    {formatCurrency(
                       getTotalPrice() - getDiscount() +
                       ((getTotalPrice() - getDiscount()) >= 50 ? 0 : 9.99) +
                       ((getTotalPrice() - getDiscount()) * 0.08)
-                    ).toFixed(2)}
+                    )}
                   </span>
                 </div>
               </div>
@@ -249,7 +250,7 @@ export default function Cart() {
             {getTotalPrice() - getDiscount() < 50 && (
               <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
                 <p className="text-sm text-orange-700">
-                  Add ${(50 - (getTotalPrice() - getDiscount())).toFixed(2)} more to get free shipping!
+                  Add {formatCurrency(50 - (getTotalPrice() - getDiscount()))} more to get free shipping!
                 </p>
               </div>
             )}
@@ -286,7 +287,7 @@ export default function Cart() {
               <div className="p-4">
                 <h3 className="text-lg font-semibold mb-2">{product.title}</h3>
                 <p className="text-xl font-bold text-orange-500 mb-3">
-                  ${product.price.toFixed(2)}
+                  {formatCurrency(product.price)}
                 </p>
                 <Link
                   to={`/product/${product.id}`}

@@ -54,6 +54,8 @@ interface CartItem {
   price: number;
   image: string;
   quantity: number;
+  sellerId: string;
+  brand: string;
 }
 
 /**
@@ -69,6 +71,8 @@ interface Product {
   rating: number;
   reviews: number;
   discount?: number;
+  sellerId?: string;
+  brand?: string;
 }
 
 // 创建应用上下文
@@ -103,7 +107,7 @@ export default function App() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token && !user) {
-      fetch('http://localhost:5000/api/auth/me', {
+      fetch(`${import.meta.env.VITE_API_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(res => res.json())
@@ -139,7 +143,9 @@ export default function App() {
         name: product.name,
         price: product.price,
         image: product.image,
-        quantity: 1
+        quantity: 1,
+        sellerId: product.sellerId || '',
+        brand: product.brand || ''
       }];
     });
   };

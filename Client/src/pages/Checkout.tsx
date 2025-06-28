@@ -4,9 +4,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { useApp } from '../App'
-import { CreditCard, Truck, Shield, MapPin } from 'lucide-react'
+import { CreditCard, Truck, Shield, MapPin, IndianRupee } from 'lucide-react'
 import axios from 'axios'
 import { load } from '@cashfreepayments/cashfree-js';
+import { formatCurrency } from '../lib/currency'
+
 interface ShippingInfo {
   firstName: string;
   lastName: string;
@@ -40,7 +42,6 @@ export default function Checkout() {
     zipCode: '',
     country: 'United States'
   });
-  console.log(cart)
   const [selectedShipping, setSelectedShipping] = useState('standard');
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -54,7 +55,6 @@ export default function Checkout() {
     }
     return 0;
   };
-
   const getShippingCost = () => {
     const subtotal = getSubtotal() - getDiscount();
     if (subtotal >= 50) return 0;
@@ -118,7 +118,10 @@ const handleSubmitOrder = async () => {
           user: user?.id,
           items: cart.map(item => ({
             product: item.id,
-            image : item.image,
+            sellerId: item.sellerId,
+            name: item.name,
+            brand: item.brand,
+            image: item.image,
             quantity: item.quantity,
             price: item.price
           })),
@@ -408,7 +411,7 @@ const handleSubmitOrder = async () => {
                       <h3 className="font-medium">{item.name}</h3>
                       <p className="text-gray-600">Quantity: {item.quantity}</p>
                     </div>
-                    <span className="font-semibold">${(item.price * item.quantity).toFixed(2)}</span>
+                    <span className="font-semibold">{formatCurrency(item.price * item.quantity)}</span>
                   </div>
                 ))}
               </div>
@@ -485,7 +488,7 @@ const handleSubmitOrder = async () => {
                     <p className="text-sm font-medium">{item.name}</p>
                     <p className="text-xs text-gray-600">Qty: {item.quantity}</p>
                   </div>
-                  <span className="text-sm font-semibold">${(item.price * item.quantity).toFixed(2)}</span>
+                  <span className="text-sm font-semibold">{formatCurrency(item.price * item.quantity)}</span>
                 </div>
               ))}
             </div>
@@ -494,25 +497,25 @@ const handleSubmitOrder = async () => {
             <div className="space-y-2 border-t pt-4">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>${getSubtotal().toFixed(2)}</span>
+                <span>{formatCurrency(getSubtotal())}</span>
               </div>
               {promoApplied && (
                 <div className="flex justify-between text-green-600">
                   <span>Promo Discount</span>
-                  <span>- ${getDiscount().toFixed(2)}</span>
+                  <span>- {formatCurrency(getDiscount())}</span>
                 </div>
               )}
               <div className="flex justify-between">
                 <span>Shipping</span>
-                <span>{getShippingCost() === 0 ? 'FREE' : `${getShippingCost().toFixed(2)}`}</span>
+                <span>{getShippingCost() === 0 ? 'FREE' : formatCurrency(getShippingCost())}</span>
               </div>
               <div className="flex justify-between">
                 <span>Tax</span>
-                <span>${getTax().toFixed(2)}</span>
+                <span>{formatCurrency(getTax())}</span>
               </div>
               <div className="flex justify-between font-semibold text-lg border-t pt-2">
                 <span>Total</span>
-                <span>${getTotal().toFixed(2)}</span>
+                <span>{formatCurrency(getTotal())}</span>
               </div>
             </div>
           </div>
