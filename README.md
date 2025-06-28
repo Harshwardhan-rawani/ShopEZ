@@ -1,6 +1,6 @@
 # ShopEZ Online Shopping Platform
 
-A full-stack e-commerce platform built with React, Node.js, and MongoDB, featuring a modern UI, secure payment integration, and comprehensive seller management system.
+A full-stack e-commerce platform built with React, Node.js, and MongoDB, featuring a modern UI, secure payment integration, comprehensive seller management system, and advanced rating & review functionality.
 
 ## 🚀 Features
 
@@ -12,13 +12,16 @@ A full-stack e-commerce platform built with React, Node.js, and MongoDB, featuri
 - **Wishlist Management**: Save favorite products for later
 - **Order History**: Track order status and view past purchases
 - **User Profile**: Manage personal information and preferences
+- **Indian Rupee Support**: Native currency integration throughout the platform
 
 ### Seller Features
 - **Seller Dashboard**: Comprehensive analytics and order management
 - **Product Management**: Add, edit, and delete products with image uploads
 - **Order Management**: Update order status (pending → processing → shipping → delivered)
-- **Revenue Tracking**: Real-time revenue calculation based on shipped orders
+- **Revenue Tracking**: Real-time revenue calculation based on shipped orders only
 - **Inventory Management**: Stock tracking and low stock alerts
+- **Payment Status Tracking**: Monitor paid/unpaid orders
+- **Order Status Control**: Full control over order lifecycle
 
 ### Admin Features
 - **Multi-role System**: Customer, Seller, and Admin roles
@@ -182,6 +185,22 @@ The platform integrates with **Cashfree Payment Gateway** for secure payment pro
 5. Order status updated to "paid"
 6. Order confirmation sent
 
+## ⭐ Rating & Review System
+
+### Features
+- **5-Star Rating System**: Interactive star rating for products
+- **Review Management**: Write, edit, and delete reviews
+- **User Validation**: One review per user per product
+- **Real-time Updates**: Automatic product rating recalculation
+- **Review Display**: Chronological listing with user attribution
+
+### Review Workflow
+1. User purchases a product
+2. Can write a review with rating (1-5 stars)
+3. Review text limited to 500 characters
+4. Product's average rating automatically updated
+5. Reviews displayed on product detail page
+
 ## 📊 Database Schema
 
 ### User Model
@@ -207,8 +226,8 @@ The platform integrates with **Cashfree Payment Gateway** for secure payment pro
   description: String,
   category: String,
   discount: Number,
-  ratings: Number,
-  reviews: Number,
+  ratings: Number,        // Average rating
+  reviews: Number,        // Total review count
   sold: Number,
   sellerId: String,
   createdAt: Date
@@ -225,7 +244,7 @@ The platform integrates with **Cashfree Payment Gateway** for secure payment pro
     quantity: Number,
     price: Number,
     name: String,
-    brand: String,
+    brand: String,        // Product brand
     image: String
   }],
   shippingInfo: {
@@ -276,7 +295,7 @@ The platform integrates with **Cashfree Payment Gateway** for secure payment pro
 
 ### Design System
 - **Modern Interface**: Clean, responsive design
-- **Indian Rupee Integration**: Native currency support
+- **Indian Rupee Integration**: Native currency support (₹)
 - **Color Scheme**: Orange theme with professional styling
 - **Responsive Design**: Mobile-first approach
 
@@ -294,6 +313,10 @@ The platform integrates with **Cashfree Payment Gateway** for secure payment pro
 2. **Processing**: Payment received, order being prepared
 3. **Shipping**: Order shipped to customer
 4. **Delivered**: Order successfully delivered
+
+### Payment Status
+- **Paid**: Payment completed successfully
+- **Unpaid**: Payment pending or failed
 
 ### Revenue Calculation
 - Only **shipped orders** count towards revenue
@@ -370,6 +393,9 @@ npm start
 - [ ] Review system
 - [ ] Seller dashboard
 - [ ] Admin functionality
+- [ ] Currency display (Indian Rupee)
+- [ ] Order status updates
+- [ ] Review submission and editing
 
 ## 🔒 Security Features
 
