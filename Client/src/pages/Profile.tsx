@@ -3,7 +3,7 @@
  */
 import { useState, useEffect } from 'react'
 import { useApp } from '../App'
-import { User, Mail, Phone, MapPin, Calendar, Settings, Package, Heart } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Calendar, Settings, Package, Heart, IndianRupee } from 'lucide-react'
 import axios from 'axios'
 
 export default function Profile() {
@@ -253,7 +253,7 @@ export default function Profile() {
                       }`}>
                         {order.status}
                       </span>
-                      <p className="text-lg font-semibold mt-1">${order.total?.toFixed(2)}</p>
+                      <p className="text-lg font-semibold mt-1 flex items-center "><IndianRupee className='w-4'/>{order.total?.toFixed(2)}</p>
                     </div>
                   </div>
                   <div className="border-t pt-4">

@@ -52,7 +52,7 @@ exports.createCashfreeSession = async (req, res) => {
       'https://sandbox.cashfree.com/pg/orders',
       {
         order_id: generatedOrderId,
-        order_amount: 1,
+        order_amount: orderAmount,
         order_currency: 'INR',
         customer_details: {
           customer_id: generatedOrderId, // or a UUID/order_id
