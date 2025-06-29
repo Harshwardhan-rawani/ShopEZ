@@ -9,17 +9,31 @@ import { formatCurrency } from '../lib/currency'
 
 interface Order {
   _id: string;
-  customer: string;
+  user?: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    createdAt: string;
+  };
   items: any[];
   amount: number;
   total?: number;
   status: 'pending' | 'processing' | 'shipping' | 'delivered' | string;
   paymentStatus: 'paid' | 'unpaid';
   date: string;
+  createdAt: string;
   shippingInfo?: {
     firstName: string;
     lastName: string;
     email: string;
+    phone: string;
+    address: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
   };
 }
 
@@ -43,6 +57,9 @@ export default function Dashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [showProductModal, setShowProductModal] = useState(false);
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [loadingCustomer, setLoadingCustomer] = useState(false);
   const [productForm, setProductForm] = useState<Partial<Product>>({
     name: '',
     price: 0,
@@ -121,12 +138,35 @@ export default function Dashboard() {
     }
   };
 
+  // Fetch complete customer details
+  const handleViewCustomerDetails = async (orderId: string) => {
+    setLoadingCustomer(true);
+    setShowCustomerModal(true);
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/orders/${orderId}/customer`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      
+      setSelectedCustomer(response.data);
+    } catch (err) {
+      console.error('Failed to fetch customer details:', err);
+      alert('Failed to fetch customer details');
+    } finally {
+      setLoadingCustomer(false);
+    }
+  };
+
   // Stats - Only count shipped orders in revenue
   const shippedOrders = orders.filter(order => order.status === 'delivered');
   const totalRevenue = shippedOrders.reduce((sum, order) => sum + (order.amount || order.total || 0), 0);
   const totalOrders = orders.length;
   const totalProducts = products.length;
-  const totalCustomers = new Set(orders.map(order => order.customer)).size;
+  const totalCustomers = new Set(orders.map(order => order.user?._id)).size;
 
 const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
   const files = e.target.files;
@@ -377,7 +417,14 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                           {order._id}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {order.customer || (order.shippingInfo?.firstName + ' ' + order.shippingInfo?.lastName)}
+                          {order.user?.firstName + ' ' + order.user?.lastName}
+                          <button
+                            onClick={() => handleViewCustomerDetails(order._id)}
+                            className="ml-2 text-blue-600 hover:text-blue-800 text-xs flex items-center"
+                          >
+                            <Eye className="w-3 h-3 mr-1" />
+                            View Details
+                          </button>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {order.items?.map(i => (
@@ -458,7 +505,14 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                         <div className="text-sm font-medium text-gray-900">{order._id}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {order.customer || (order.shippingInfo?.firstName + ' ' + order.shippingInfo?.lastName)}
+                        {order.user?.firstName + ' ' + order.user?.lastName}
+                        <button
+                          onClick={() => handleViewCustomerDetails(order._id)}
+                          className="ml-2 text-blue-600 hover:text-blue-800 text-xs flex items-center"
+                        >
+                          <Eye className="w-3 h-3 mr-1" />
+                          View Details
+                        </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {order.items?.map(i => (
@@ -697,6 +751,150 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
           </div>  
         )}
       </div>
+
+      {/* Customer Details Modal */}
+      {showCustomerModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 w-full max-w-2xl relative m-4 sm:my-12 max-h-[90vh] overflow-y-auto">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+              onClick={() => setShowCustomerModal(false)}
+            >
+              ×
+            </button>
+            
+            {loadingCustomer ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+                <p className="mt-2 text-gray-600">Loading customer details...</p>
+              </div>
+            ) : selectedCustomer ? (
+              <div>
+                <h3 className="text-xl font-semibold mb-6">Complete Customer Details</h3>
+                
+                {/* Order Information */}
+                <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                  <h4 className="font-semibold text-lg mb-3">Order Information</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium">Order ID:</span> {selectedCustomer.orderId}
+                    </div>
+                    <div>
+                      <span className="font-medium">Order Date:</span> {new Date(selectedCustomer.orderDate).toLocaleDateString()}
+                    </div>
+                    <div>
+                      <span className="font-medium">Status:</span> 
+                      <span className={`ml-2 px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(selectedCustomer.orderStatus)}`}>
+                        {selectedCustomer.orderStatus}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium">Payment Status:</span>
+                      <span className={`ml-2 px-2 py-1 text-xs font-semibold rounded-full ${getPaymentStatusColor(selectedCustomer.paymentStatus)}`}>
+                        {selectedCustomer.paymentStatus}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium">Total Amount:</span> {formatCurrency(selectedCustomer.total)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* User Account Details */}
+                {selectedCustomer.user && (
+                  <div className="bg-blue-50 p-4 rounded-lg mb-6">
+                    <h4 className="font-semibold text-lg mb-3">Account Information</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium">Full Name:</span> {selectedCustomer.user.fullName}
+                      </div>
+                      <div>
+                        <span className="font-medium">Email:</span> {selectedCustomer.user.email}
+                      </div>
+                      <div>
+                        <span className="font-medium">Phone:</span> {selectedCustomer.user.phone}
+                      </div>
+                      <div>
+                        <span className="font-medium">Account Created:</span> {new Date(selectedCustomer.user.accountCreated).toLocaleDateString()}
+                      </div>
+                      <div>
+                        <span className="font-medium">User ID:</span> {selectedCustomer.user.id}
+                      </div>
+                      <div>
+                        <span className="font-medium">Role:</span> {selectedCustomer.user.role}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Shipping Information */}
+                <div className="bg-green-50 p-4 rounded-lg mb-6">
+                  <h4 className="font-semibold text-lg mb-3">Shipping Information</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium">Full Name:</span> {selectedCustomer.shipping.fullName}
+                    </div>
+                    <div>
+                      <span className="font-medium">Email:</span> {selectedCustomer.shipping.email}
+                    </div>
+                    <div>
+                      <span className="font-medium">Phone:</span> {selectedCustomer.shipping.phone}
+                    </div>
+                    <div>
+                      <span className="font-medium">Address:</span> {selectedCustomer.shipping.address}
+                    </div>
+                    <div>
+                      <span className="font-medium">City:</span> {selectedCustomer.shipping.city}
+                    </div>
+                    <div>
+                      <span className="font-medium">State:</span> {selectedCustomer.shipping.state}
+                    </div>
+                    <div>
+                      <span className="font-medium">ZIP Code:</span> {selectedCustomer.shipping.zipCode}
+                    </div>
+                    <div>
+                      <span className="font-medium">Country:</span> {selectedCustomer.shipping.country}
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <span className="font-medium">Complete Address:</span>
+                    <p className="text-sm mt-1">{selectedCustomer.shipping.completeAddress}</p>
+                  </div>
+                </div>
+
+                {/* Order Items */}
+                <div className="bg-orange-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-lg mb-3">Order Items</h4>
+                  <div className="space-y-3">
+                    {selectedCustomer.items.map((item: any, index: number) => (
+                      <div key={index} className="flex items-center space-x-4 p-3 bg-white rounded-lg">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium">{item.name}</div>
+                          <div className="text-sm text-gray-600">Brand: {item.brand}</div>
+                          <div className="text-sm text-gray-600">Quantity: {item.quantity}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-medium">{formatCurrency(item.price)}</div>
+                          <div className="text-sm text-gray-600">Total: {formatCurrency(item.total)}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-600">No customer details found.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

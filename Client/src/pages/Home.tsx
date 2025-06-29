@@ -13,7 +13,7 @@ export default function Home() {
 
   useEffect(() => {
     // Fetch top 4 products from dummyjson API
-    axios.get('https://dummyjson.com/products?limit=4')
+    axios.get(`${import.meta.env.VITE_API_URL}/product/`)
       .then(res => {
         setFeaturedProducts(res.data.products);
       });

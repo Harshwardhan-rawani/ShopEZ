@@ -86,9 +86,9 @@ export default function Navbar() {
                     <Link to="/dashboard" className="text-gray-700 hover:text-orange-500 transition-colors">
                       Dashboard
                     </Link>
-                    <Link to="/analytics" className="text-gray-700 hover:text-orange-500 transition-colors">
+                    {/* <Link to="/analytics" className="text-gray-700 hover:text-orange-500 transition-colors">
                       Analytics
-                    </Link>
+                    </Link> */}
                   </>
                 )}
                 
