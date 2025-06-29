@@ -12,13 +12,34 @@ export default function Cart() {
   const { cart, updateCartQuantity, removeFromCart, promoApplied, setPromoApplied, promoCode, setPromoCode } = useApp();
   const [promoError, setPromoError] = useState('');
   const [recommended, setRecommended] = useState<any[]>([]);
+  const [loadingRecommended, setLoadingRecommended] = useState(false);
 
-  // Fetch recommended products from dummyjson API
+  // Fetch recommended products based on categories in cart
   useEffect(() => {
-    axios.get('https://dummyjson.com/products?limit=4&skip=10')
-      .then(res => setRecommended(res.data.products))
-      .catch(() => setRecommended([]));
-  }, []);
+    if (cart.length > 0) {
+      setLoadingRecommended(true);
+      
+      // Get unique categories from cart items
+      const categories = [...new Set(cart.map(item => item.category))];
+      const excludeIds = cart.map(item => item.id);
+      
+      axios.post(`${import.meta.env.VITE_API_URL}/api/products/recommended`, {
+        categories,
+        excludeIds
+      })
+        .then(res => {
+          setRecommended(res.data);
+          setLoadingRecommended(false);
+        })
+        .catch(err => {
+          console.error('Error fetching recommended products:', err);
+          setRecommended([]);
+          setLoadingRecommended(false);
+        });
+    } else {
+      setRecommended([]);
+    }
+  }, [cart]);
 
   /**
    * 计算购物车总价
@@ -276,29 +297,49 @@ export default function Cart() {
       {/* Recommended Products */}
       <div className="mt-16">
         <h2 className="text-2xl font-bold text-gray-800 mb-8">You might also like</h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {recommended.map((product) => (
-            <div key={product.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-              <img
-                src={product.images?.[0]}
-                alt={product.title}
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-4">
-                <h3 className="text-lg font-semibold mb-2">{product.title}</h3>
-                <p className="text-xl font-bold text-orange-500 mb-3">
-                  {formatCurrency(product.price)}
-                </p>
-                <Link
-                  to={`/product/${product.id}`}
-                  className="w-full bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors text-center block"
-                >
-                  View Product
-                </Link>
+        {loadingRecommended ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white rounded-lg shadow-lg overflow-hidden animate-pulse">
+                <div className="h-48 bg-gray-300"></div>
+                <div className="p-4">
+                  <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                  <div className="h-6 bg-gray-300 rounded mb-3"></div>
+                  <div className="h-8 bg-gray-300 rounded"></div>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : recommended.length > 0 ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {recommended.map((product) => (
+              <div key={product._id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+                <img
+                  src={product.images?.[0]}
+                  alt={product.name}
+                  className="w-full h-48 object-cover"
+                />
+                <div className="p-4">
+                  <h3 className="text-lg font-semibold mb-2">{product.name}</h3>
+                  <p className="text-gray-600 text-sm mb-2">{product.brand}</p>
+                  <p className="text-xl font-bold text-orange-500 mb-3">
+                    {formatCurrency(product.price)}
+                  </p>
+                  <Link
+                    to={`/product/${product._id}`}
+                    className="w-full bg-orange-500 text-white py-2 px-4 rounded-lg hover:bg-orange-400 transition-colors text-center block"
+                  >
+                    View Product
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-500">No recommendations available at the moment.</p>
+          </div>
+        )}
       </div>
     </div>
   );

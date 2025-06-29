@@ -56,6 +56,7 @@ interface CartItem {
   quantity: number;
   sellerId: string;
   brand: string;
+  category: string;
 }
 
 /**
@@ -145,7 +146,8 @@ export default function App() {
         image: product.image,
         quantity: 1,
         sellerId: product.sellerId || '',
-        brand: product.brand || ''
+        brand: product.brand || '',
+        category: product.category
       }];
     });
   };

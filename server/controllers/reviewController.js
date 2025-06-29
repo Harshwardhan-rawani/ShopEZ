@@ -38,8 +38,8 @@ exports.createReview = async (req, res) => {
       userName: `${req.user.firstName} ${req.user.lastName}`,
     });
 
-    // Update product's average rating
-    await updateProductRating(productId);
+    // Update product's average rating and add review to product
+    await updateProductRating(productId, newReview._id);
 
     res.status(201).json(newReview);
   } catch (err) {
@@ -90,8 +90,8 @@ exports.deleteReview = async (req, res) => {
 
     await Review.findByIdAndDelete(reviewId);
 
-    // Update product's average rating
-    await updateProductRating(existingReview.product);
+    // Update product's average rating and remove review from product
+    await updateProductRating(existingReview.product, reviewId, true);
 
     res.json({ message: 'Review deleted successfully' });
   } catch (err) {
@@ -100,15 +100,32 @@ exports.deleteReview = async (req, res) => {
 };
 
 // Helper function to update product's average rating
-async function updateProductRating(productId) {
+async function updateProductRating(productId, reviewId = null, isDelete = false) {
   try {
     const reviews = await Review.find({ product: productId });
     const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
     const averageRating = reviews.length > 0 ? totalRating / reviews.length : 0;
 
+    // Get current product to update reviews array
+    const product = await Product.findById(productId);
+    if (!product) {
+      console.error('Product not found:', productId);
+      return;
+    }
+
+    let updatedReviews = [...product.reviews];
+
+    if (isDelete && reviewId) {
+      // Remove review ID from product's reviews array
+      updatedReviews = updatedReviews.filter(id => id.toString() !== reviewId.toString());
+    } else if (reviewId && !updatedReviews.includes(reviewId)) {
+      // Add review ID to product's reviews array
+      updatedReviews.push(reviewId);
+    }
+
     await Product.findByIdAndUpdate(productId, {
       ratings: averageRating,
-      reviews: reviews.length
+      reviews: updatedReviews
     });
   } catch (err) {
     console.error('Error updating product rating:', err);

@@ -6,16 +6,23 @@ import { Link } from 'react-router'
 import { useApp } from '../App'
 import { Star, ShoppingCart, Shield, Truck, Headphones, Award } from 'lucide-react'
 import axios from 'axios'
+import { formatCurrency } from '../lib/currency'
 
 export default function Home() {
   const { addToCart } = useApp();
-  const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
+  const [productsByCategory, setProductsByCategory] = useState<{[key: string]: any[]}>({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch top 4 products from dummyjson API
-    axios.get(`${import.meta.env.VITE_API_URL}/product/`)
+    // Fetch products by category from backend
+    axios.get(`${import.meta.env.VITE_API_URL}/api/products/by-category`)
       .then(res => {
-        setFeaturedProducts(res.data.products);
+        setProductsByCategory(res.data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Error fetching products by category:', err);
+        setLoading(false);
       });
   }, []);
 
@@ -25,11 +32,14 @@ export default function Home() {
   const handleAddToCart = (product: any) => {
     addToCart({
       ...product,
-      name: product.title || product.name,
-      image: product.images?.[0] || product.image,
+      name: product.name,
+      image: product.images?.[0],
       quantity: 1
     });
   };
+
+  // Get all categories
+  const categories = Object.keys(productsByCategory);
 
   return (
     <div className="min-h-screen">
@@ -128,93 +138,122 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Products */}
-      <section className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-800 mb-4">
-              Featured Products
-            </h2>
-            <p className="text-xl text-gray-600">
-              Discover our handpicked selection of trending items
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {featuredProducts.map((product) => (
-              <Link
-                key={product.id}
-                to={`/product/${product.id}`}
-                className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow block"
-              >
-                <div className="relative">
-                  <img
-                    src={product.images?.[0] || product.image}
-                    alt={product.title || product.name}
-                    className="w-full h-48 object-cover"
-                  />
-                  {product.discountPercentage && (
-                    <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-sm">
-                      {product.discountPercentage}% OFF
-                    </div>
-                  )}
-                </div>
-                <div className="p-6">
-                  <h3 className="text-lg font-semibold mb-2">{product.title || product.name}</h3>
-                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
-                  <div className="flex items-center mb-3">
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-4 h-4 ${
-                            i < Math.floor(product.rating || 0)
-                              ? 'text-yellow-400 fill-current'
-                              : 'text-gray-300'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-sm text-gray-500 ml-2">
-                      ({product.stock || product.reviews || 0})
-                    </span>
+      {/* Products by Category */}
+      {loading ? (
+        <section className="py-20 bg-gray-50">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-bold text-gray-800 mb-4">
+                Browse by Category
+              </h2>
+              <p className="text-xl text-gray-600">
+                Loading amazing products...
+              </p>
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="bg-white rounded-lg shadow-lg overflow-hidden animate-pulse">
+                  <div className="h-48 bg-gray-300"></div>
+                  <div className="p-6">
+                    <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                    <div className="h-3 bg-gray-300 rounded mb-3"></div>
+                    <div className="h-6 bg-gray-300 rounded mb-3"></div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-2xl font-bold text-orange-500">
-                        ${(product.price * (1 - (product.discountPercentage || 0) / 100)).toFixed(2)}
-                      </span>
-                      {product.discountPercentage && (
-                        <span className="text-sm text-gray-500 line-through">
-                          ${product.price}
-                        </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : (
+        categories.map((category) => (
+          <section key={category} className="py-20 bg-gray-50">
+            <div className="container mx-auto px-4">
+              <div className="text-center mb-16">
+                <h2 className="text-4xl font-bold text-gray-800 mb-4">
+                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                </h2>
+                <p className="text-xl text-gray-600">
+                  Discover our handpicked selection of {category} products
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {productsByCategory[category].map((product) => (
+                  <Link
+                    key={product._id}
+                    to={`/product/${product._id}`}
+                    className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow block"
+                  >
+                    <div className="relative">
+                      <img
+                        src={product.images?.[0]}
+                        alt={product.name}
+                        className="w-full h-48 object-cover"
+                      />
+                      {product.discount > 0 && (
+                        <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-sm">
+                          {product.discount}% OFF
+                        </div>
                       )}
                     </div>
-                    <button
-                      onClick={e => {
-                        e.preventDefault();
-                        handleAddToCart(product);
-                      }}
-                      className="bg-orange-500 text-white p-2 rounded-full hover:bg-orange-600 transition-colors"
-                    >
-                      <ShoppingCart className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+                    <div className="p-6">
+                      <h3 className="text-lg font-semibold mb-2">{product.name}</h3>
+                      <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
+                      <div className="flex items-center mb-3">
+                        <div className="flex items-center">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-4 h-4 ${
+                                i < Math.floor(product.ratings || 0)
+                                  ? 'text-yellow-400 fill-current'
+                                  : 'text-gray-300'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-sm text-gray-500 ml-2">
+                          ({product.stock || 0})
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-2xl font-bold text-orange-500">
+                            {formatCurrency(product.price * (1 - (product.discount || 0) / 100))}
+                          </span>
+                          {product.discount > 0 && (
+                            <span className="text-sm text-gray-500 line-through">
+                              {formatCurrency(product.price)}
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={e => {
+                            e.preventDefault();
+                            handleAddToCart(product);
+                          }}
+                          className="bg-orange-500 text-white p-2 rounded-full hover:bg-orange-600 transition-colors"
+                        >
+                          <ShoppingCart className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
 
-          <div className="text-center mt-12">
-            <Link
-              to="/products"
-              className="bg-orange-500 text-white px-8 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
-            >
-              View All Products
-            </Link>
-          </div>
-        </div>
-      </section>
+              <div className="text-center mt-12">
+                <Link
+                  to="/products"
+                  className="bg-orange-500 text-white px-8 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
+                >
+                  View All {category} Products
+                </Link>
+              </div>
+            </div>
+          </section>
+        ))
+      )}
 
       {/* Testimonials */}
       <section className="py-20 bg-white">
