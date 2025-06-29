@@ -1,12 +1,97 @@
 const { Product } = require('../models/Product');
 
-exports.getAll = async (req, res) => {
-  const filter = {};
-  if (req.query.sellerId) {
-    filter.sellerId = req.query.sellerId;
+// Sample products data
+const sampleProducts = [
+  {
+    name: "iPhone 15 Pro",
+    brand: "Apple",
+    price: 99999,
+    stock: 50,
+    images: ["https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=500"],
+    description: "Latest iPhone with advanced camera system and A17 Pro chip",
+    category: "Mobile",
+    discount: 5,
+    sellerId: "sample-seller-1"
+  },
+  {
+    name: "Samsung Galaxy S24",
+    brand: "Samsung",
+    price: 89999,
+    stock: 40,
+    images: ["https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500"],
+    description: "Premium Android smartphone with AI features",
+    category: "Mobile",
+    discount: 10,
+    sellerId: "sample-seller-1"
+  },
+  {
+    name: "MacBook Pro M3",
+    brand: "Apple",
+    price: 199999,
+    stock: 25,
+    images: ["https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500"],
+    description: "Professional laptop with M3 chip for power users",
+    category: "Laptop",
+    discount: 0,
+    sellerId: "sample-seller-2"
+  },
+  {
+    name: "Dell XPS 13",
+    brand: "Dell",
+    price: 129999,
+    stock: 30,
+    images: ["https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=500"],
+    description: "Ultra-thin laptop with InfinityEdge display",
+    category: "Laptop",
+    discount: 15,
+    sellerId: "sample-seller-2"
+  },
+  {
+    name: "AirPods Pro",
+    brand: "Apple",
+    price: 24999,
+    stock: 100,
+    images: ["https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1?w=500"],
+    description: "Wireless earbuds with active noise cancellation",
+    category: "Earphone",
+    discount: 8,
+    sellerId: "sample-seller-3"
+  },
+  {
+    name: "Sony WH-1000XM5",
+    brand: "Sony",
+    price: 34999,
+    stock: 60,
+    images: ["https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500"],
+    description: "Premium wireless headphones with industry-leading noise cancellation",
+    category: "Earphone",
+    discount: 12,
+    sellerId: "sample-seller-3"
   }
-  const products = await Product.find(filter);
-  res.json(products);
+];
+
+exports.getAll = async (req, res) => {
+  try {
+    const filter = {};
+    if (req.query.sellerId) {
+      filter.sellerId = req.query.sellerId;
+    }
+    
+    let products = await Product.find(filter);
+    
+    // If no products exist, create sample products
+    if (products.length === 0) {
+      console.log('No products found, creating sample products...');
+      await Product.insertMany(sampleProducts);
+      products = await Product.find(filter);
+      console.log(`Created ${products.length} sample products`);
+    }
+    
+    res.json(products);
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    res.status(500).json({ message: 'Failed to fetch products', error: error.message });
+  }
 };
 
 exports.getOne = async (req, res) => {

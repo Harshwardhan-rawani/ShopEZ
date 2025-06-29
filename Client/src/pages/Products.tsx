@@ -30,35 +30,22 @@ export default function Products() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState('name');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 300000]);
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
   const categories = [
-  "All",
-  "smartphones",
-  "fragrances",
-  "groceries",
-  "furniture",
-  "tops",
-  "womens-dresses",
-    "womens-watches",
-  "womens-bags",
-  "womens-shoes",
-  "mens-shirts",
-  "mens-shoes",
-  "mens-watches",
-
-  "womens-jewellery",
-  "sunglasses",
- 
-]
-;
+    "All",
+    "Mobile",
+    "Laptop", 
+    "Earphone"
+  ];
 
   useEffect(() => {
     setLoading(true);
-    // Fetch products from backend API instead of dummyjson
+    // Fetch products from backend API
     axios.get(`${import.meta.env.VITE_API_URL}/api/products`)
       .then(res => {
+        console.log('Raw API response:', res.data);
         // Map backend fields to local Product interface
         const products = res.data.map((p: any) => ({
           id: p._id,
@@ -74,14 +61,21 @@ export default function Products() {
           discount: p.discount || 5,
           brand: p.brand,
         }));
+        console.log('Mapped products:', products);
         setProducts(products);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((error) => {
+        console.error('Error fetching products:', error);
+        setLoading(false);
+      });
   }, []);
 
   useEffect(() => {
     let filtered = products;
+    console.log('=== FILTERING DEBUG ===');
+    console.log('Initial products count:', products.length);
+    console.log('Initial products:', products);
 
     // 搜索过滤
     const searchQuery = searchParams.get('search');
@@ -91,11 +85,36 @@ export default function Products() {
         product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.category.toLowerCase().includes(searchQuery.toLowerCase())
       );
+      console.log('After search filter:', filtered.length);
     }
 
     // 分类过滤
     if (selectedCategory !== 'All') {
-      filtered = filtered.filter(product => product.category === selectedCategory);
+      console.log('Filtering by category:', selectedCategory);
+      filtered = filtered.filter(product => {
+        const productCategory = product.category?.toLowerCase();
+        const selectedCat = selectedCategory.toLowerCase();
+        
+        console.log(`Product: ${product.name}, Category: ${productCategory}, Selected: ${selectedCat}`);
+        
+        // Map frontend categories to backend categories
+        const categoryMapping: { [key: string]: string[] } = {
+          'mobile': ['mobile', 'smartphone', 'smartphones', 'phone'],
+          'laptop': ['laptop', 'laptops', 'computer', 'computers'],
+          'earphone': ['earphone', 'earphones', 'headphone', 'headphones', 'audio']
+        };
+        
+        if (categoryMapping[selectedCat]) {
+          const matches = categoryMapping[selectedCat].includes(productCategory);
+          console.log(`Category mapping check: ${matches}`);
+          return matches;
+        }
+        
+        const exactMatch = productCategory === selectedCat;
+        console.log(`Exact match check: ${exactMatch}`);
+        return exactMatch;
+      });
+      console.log('After category filter:', filtered.length);
     }
 
     // 价格范围过滤
@@ -103,8 +122,11 @@ export default function Products() {
       const finalPrice = product.discount
         ? product.price * (1 - product.discount / 100)
         : product.price;
-      return finalPrice >= priceRange[0] && finalPrice <= priceRange[1];
+      const inRange = finalPrice >= priceRange[0] && finalPrice <= priceRange[1];
+      console.log(`Product: ${product.name}, Price: ${product.price}, Final: ${finalPrice}, In range: ${inRange}`);
+      return inRange;
     });
+    console.log('After price filter:', filtered.length);
 
     // 排序
     filtered.sort((a, b) => {
@@ -122,6 +144,9 @@ export default function Products() {
       }
     });
 
+    console.log('Final filtered products:', filtered);
+    console.log('Final count:', filtered.length);
+    console.log('=== END FILTERING DEBUG ===');
     setFilteredProducts(filtered);
   }, [products, selectedCategory, sortBy, priceRange, searchParams]);
 
@@ -129,6 +154,8 @@ export default function Products() {
    * 处理添加到购物车
    */
   console.log('products', products)
+  console.log('filteredProducts', filteredProducts)
+  console.log('loading', loading)
 
   const handleAddToCart = (product: Product) => {
     console.log('Adding to cart:', product);
@@ -261,8 +288,8 @@ export default function Products() {
                 <input
                   type="range"
                   min="0"
-                  max="1000"
-                  step="10"
+                  max="300000"
+                  step="1000"
                   value={priceRange[1]}
                   onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
                   className="w-full"
@@ -295,6 +322,10 @@ export default function Products() {
               {Array.from({ length: 9 }).map((_, i) => (
                 <SkeletonCard key={i} />
               ))}
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">No products found matching your criteria.</p>
             </div>
           ) : viewMode === 'grid' ? (
             <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -344,11 +375,12 @@ export default function Products() {
                           <span className="text-2xl font-bold text-orange-500 flex items-center">
                             <IndianRupee/>{formatCurrency(getFinalPrice(product))}
                           </span>
-                        
+                          {product.discount > 0 && (
                             <span className="text-sm text-gray-500 line-through flex items-center ">
                               <IndianRupee className='w-4'/>
                               {formatCurrency(product.price)}
-                     </span>
+                            </span>
+                          )}
                         </div>
                         <button
                           type="button"
@@ -440,12 +472,6 @@ export default function Products() {
                   </div>
                 </div>
               ))}
-            </div>
-          )}
-
-          {!loading && filteredProducts.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">No products found matching your criteria.</p>
             </div>
           )}
         </div>
