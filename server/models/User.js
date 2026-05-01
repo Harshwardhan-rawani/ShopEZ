@@ -9,7 +9,8 @@ const userSchema = new mongoose.Schema({
   password:  { type: String, required: true },
   role:      { type: String, enum: ['customer', 'seller', 'admin'], default: 'customer' },
   createdAt: { type: Date, default: Date.now },
-  wishlist: [{ type: mongoose.Schema.Types.Mixed }] // Array of product objects or IDs
+  wishlist: [{ type: mongoose.Schema.Types.Mixed }], // Array of product objects or IDs
+  cart: [{ type: mongoose.Schema.Types.Mixed }] // Array of cart items
 });
 
 userSchema.pre('save', async function(next) {

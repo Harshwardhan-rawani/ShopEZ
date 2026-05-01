@@ -1,4 +1,5 @@
 const { Product } = require('../models/Product');
+const axios = require('axios');
 
 
 
@@ -62,6 +63,39 @@ exports.getRecommended = async (req, res) => {
   } catch (err) {
     console.error('Error getting recommended products:', err);
     res.status(500).json({ message: 'Failed to get recommended products', error: err.message });
+  }
+};
+
+exports.getPersonalizedRecommendations = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    // Proxy request to Python Microservice
+    const pythonServiceUrl = process.env.PYTHON_SERVICE_URL || 'http://127.0.0.1:8000';
+    
+    let recommendedProductIds = [];
+    try {
+      const response = await axios.get(`${pythonServiceUrl}/recommend/${userId}`);
+      recommendedProductIds = response.data.recommendations || [];
+    } catch (pythonErr) {
+      console.error('Python recommendation service failed, falling back to default:', pythonErr.message);
+    }
+
+    let recommendedProducts = [];
+    if (recommendedProductIds.length > 0) {
+      // Fetch products matching the IDs from Python service
+      recommendedProducts = await Product.find({ _id: { $in: recommendedProductIds } });
+      // Maintain order returned by python service if possible, or just return them
+    } else {
+      // Fallback: top rated and most sold
+      recommendedProducts = await Product.find({})
+        .limit(8)
+        .sort({ ratings: -1, sold: -1 });
+    }
+
+    res.json(recommendedProducts);
+  } catch (err) {
+    console.error('Error getting personalized recommendations:', err);
+    res.status(500).json({ message: 'Failed to get personalized recommendations', error: err.message });
   }
 };
 

@@ -3,12 +3,13 @@
  */
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { useApp } from '../App'
+import { useApp, CartItem } from '../App'
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
 import * as api from '../services/api';
+import axios from 'axios';
 
 export default function Login() {
-  const { setUser } = useApp();
+  const { setUser, setCart } = useApp();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
@@ -41,6 +42,33 @@ export default function Login() {
       const response = await api.login(formData.email, formData.password);
       setUser(response.user);
       localStorage.setItem('token', response.token);
+
+      setCart(prevCart => {
+        if ((!response.user.cart || response.user.cart.length === 0) && prevCart.length === 0) {
+          return prevCart;
+        }
+
+        const mergedCart = [...prevCart];
+        if (response.user.cart && response.user.cart.length > 0) {
+          response.user.cart.forEach((remoteItem: CartItem) => {
+            const localItemIndex = mergedCart.findIndex(item => item.id === remoteItem.id);
+            if (localItemIndex > -1) {
+              mergedCart[localItemIndex] = {
+                ...mergedCart[localItemIndex],
+                quantity: Math.max(mergedCart[localItemIndex].quantity, remoteItem.quantity)
+              };
+            } else {
+              mergedCart.push(remoteItem);
+            }
+          });
+        }
+
+        axios.put(`${import.meta.env.VITE_API_URL}/api/users/${response.user.id}/cart`, { cart: mergedCart })
+          .catch(err => console.error('Failed to sync cart:', err));
+
+        return mergedCart;
+      });
+
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed');
@@ -189,7 +217,7 @@ export default function Login() {
               <span className="px-2 bg-gray-50 text-gray-500">Demo Accounts</span>
             </div>
           </div>
-          
+
           <div className="mt-6 grid grid-cols-3 gap-3">
             <button
               onClick={() => quickLogin('customer')}

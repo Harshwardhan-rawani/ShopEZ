@@ -1,6 +1,7 @@
 const { Order } = require('../models/Order');
 const { Product } = require('../models/Product');
 const { User } = require('../models/User');
+const { Interaction } = require('../models/Interaction');
 const axios = require('axios');
 
 exports.createAfterPayment = async (req, res) => {
@@ -15,6 +16,23 @@ exports.createAfterPayment = async (req, res) => {
       status: 'pending',
       paymentStatus: 'paid'
     });
+
+    // Log 'buy' interaction for each product if user is logged in
+    if (order.user) {
+      const interactions = order.items.map(item => ({
+        user: order.user,
+        product: item.product || item.id, // Depending on how it's passed
+        action: 'buy',
+        weight: 5,
+        category: item.category || 'unknown' // if category is in item
+      }));
+      try {
+        await Interaction.insertMany(interactions.filter(i => i.product));
+      } catch (err) {
+        console.error('Failed to log buy interactions', err);
+      }
+    }
+
     res.status(201).json(order);
   } catch (err) {
     res.status(500).json({ message: 'Order creation failed', error: err });

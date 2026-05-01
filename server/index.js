@@ -9,6 +9,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const userRoutes = require('./routes/userRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const interactionRoutes = require('./routes/interactionRoutes');
 
 dotenv.config();
 const app = express();
@@ -22,6 +23,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/interactions', interactionRoutes);
 
 connectDB();
 

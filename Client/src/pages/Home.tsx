@@ -4,27 +4,42 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router'
 import { useApp } from '../App'
-import { Star, ShoppingCart, Shield, Truck, Headphones, Award } from 'lucide-react'
+import { Star, ShoppingCart, Search, Package, MapPin, Truck, Headphones, Award } from 'lucide-react'
 import axios from 'axios'
 import { formatCurrency } from '../lib/currency'
+import ProductCard from '../components/ui/ProductCard'
 
 export default function Home() {
-  const { addToCart } = useApp();
-  const [productsByCategory, setProductsByCategory] = useState<{[key: string]: any[]}>({});
+  const { addToCart, user } = useApp();
+  const [productsByCategory, setProductsByCategory] = useState<{ [key: string]: any[] }>({});
+  const [recommendedProducts, setRecommendedProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Fetch products by category from backend
-    axios.get(`${import.meta.env.VITE_API_URL}/api/products/by-category`)
-      .then(res => {
-        setProductsByCategory(res.data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Error fetching products by category:', err);
+    const fetchPromises = [
+      axios.get(`${import.meta.env.VITE_API_URL}/api/products/by-category`)
+    ];
+
+    if (user) {
+      fetchPromises.push(
+        axios.get(`${import.meta.env.VITE_API_URL}/api/products/recommendations/personalized`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        })
+      );
+    }
+
+    Promise.allSettled(fetchPromises)
+      .then(results => {
+        if (results[0].status === 'fulfilled') {
+          setProductsByCategory(results[0].value.data);
+        }
+        if (results[1] && results[1].status === 'fulfilled') {
+          setRecommendedProducts(results[1].value.data);
+        }
         setLoading(false);
       });
-  }, []);
+  }, [user]);
 
   /**
    * 处理添加到购物车
@@ -42,326 +57,259 @@ export default function Home() {
   const categories = Object.keys(productsByCategory);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#FAF8F5]">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-orange-500 to-red-500 text-white">
-        <div className="container mx-auto px-4 py-20">
+      <section className="bg-white mx-4 md:mx-8 mt-6 rounded-2xl overflow-hidden relative border border-gray-100">
+        <div className="container mx-auto px-6 md:px-16 py-16 md:py-24 relative z-10">
           <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="text-5xl font-bold mb-6">
-                Welcome to ShopEZ
+            <div className="max-w-xl">
+              <div className="flex items-center space-x-2 mb-4">
+                <span className="w-8 h-[2px] bg-[#F59E0B]"></span>
+                <span className="text-[#F59E0B] font-semibold text-sm tracking-widest uppercase">Premium Store</span>
+              </div>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 mb-6 leading-[1.1] tracking-tight uppercase">
+                Shop Computers & Accessories
               </h1>
-              <p className="text-xl mb-8 leading-relaxed">
-                Your one-stop destination for effortless online shopping. 
-                With a user-friendly interface and comprehensive product catalog, 
-                finding the perfect items has never been easier.
+              <p className="text-lg md:text-xl text-slate-500 mb-10 leading-relaxed">
+                Shop laptops, desktops, monitors, tablets, PC gaming, hard drives and storage, accessories and more.
               </p>
-              <div className="flex space-x-4">
-                <Link
-                  to="/products"
-                  className="bg-white text-orange-500 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
-                >
-                  Shop Now
-                </Link>
-                <Link
-                  to="/register"
-                  className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-orange-500 transition-colors"
-                >
-                  Join Us
-                </Link>
-              </div>
+              <Link
+                to="/products"
+                className="inline-block bg-white text-slate-900 px-8 py-3.5 border-2 border-slate-200 rounded-full font-bold hover:border-slate-900 transition-colors"
+              >
+                View more
+              </Link>
             </div>
-            <div className="flex justify-center">
+            <div className="flex justify-center md:justify-end relative">
               <img
-                src="https://pub-cdn.sider.ai/u/U0Y3HGZW7LV/web-coder/685ac1739ac9f9652371ce3f/resource/9732f688-5a65-4276-8aed-70b79a5f04a9.jpg"
-                alt="Shopping Experience"
-                className="w-full max-w-md rounded-lg shadow-2xl object-cover"
+                src="/hero-image.png"
+                alt="Modern Electronics Setup"
+                className="w-full max-w-lg object-contain aspect-square"
               />
+              <div className="absolute top-10 right-10 bg-[#F59E0B] text-white w-16 h-16 flex items-center justify-center rounded-full font-bold shadow-lg transform rotate-12">
+                -20%
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-800 mb-4">
-              Why Choose ShopEZ?
-            </h2>
-            <p className="text-xl text-gray-600">
-              Experience the future of online shopping with our innovative features
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center p-6 bg-gray-50 rounded-lg hover:shadow-lg transition-shadow">
-              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Shield className="w-8 h-8 text-orange-500" />
+      {/* Recommended Top Strip */}
+      <div className="container mx-auto px-4 mt-8">
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 flex flex-wrap items-center justify-between gap-6">
+          {user ? (
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                <img src={`https://ui-avatars.com/api/?name=${user.name}&background=random`} alt={user.name} className="w-10 h-10 rounded-full" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Seamless Checkout</h3>
-              <p className="text-gray-600">
-                Secure and efficient checkout process with multiple payment options
-              </p>
+              <div>
+                <p className="text-sm text-gray-500">Hi, {user.name}</p>
+                <p className="font-semibold text-slate-900">Recommendations for you!</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                <Search className="w-5 h-5 text-gray-400" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Welcome to ShopEZ</p>
+                <Link to="/login" className="font-semibold text-[#F59E0B] hover:underline">Sign in for recommendations</Link>
+              </div>
+            </div>
+          )}
+
+          <div className="hidden md:flex items-center space-x-12 flex-1 justify-center border-l border-gray-100 pl-8 ml-4">
+            <div className="flex items-center space-x-3 cursor-pointer group">
+              <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center group-hover:bg-[#F59E0B] transition-colors">
+                <Package className="w-5 h-5 text-[#F59E0B] group-hover:text-white" />
+              </div>
+              <div>
+                <p className="font-bold text-slate-900 text-sm">Your Orders</p>
+                <p className="text-xs text-gray-500">Track & return</p>
+              </div>
             </div>
 
-            <div className="text-center p-6 bg-gray-50 rounded-lg hover:shadow-lg transition-shadow">
-              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Star className="w-8 h-8 text-orange-500" />
+            <div className="flex items-center space-x-3 cursor-pointer group">
+              <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center">
+                <Headphones className="w-5 h-5 text-gray-600" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Product Discovery</h3>
-              <p className="text-gray-600">
-                Effortless browsing with smart filters and personalized recommendations
-              </p>
-            </div>
-
-            <div className="text-center p-6 bg-gray-50 rounded-lg hover:shadow-lg transition-shadow">
-              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Truck className="w-8 h-8 text-orange-500" />
+              <div>
+                <p className="font-bold text-slate-900 text-sm">Electronics</p>
+                <p className="text-xs text-[#F59E0B]">Big Sale 20%</p>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Fast Delivery</h3>
-              <p className="text-gray-600">
-                Quick and reliable shipping with real-time tracking
-              </p>
-            </div>
-
-            <div className="text-center p-6 bg-gray-50 rounded-lg hover:shadow-lg transition-shadow">
-              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Headphones className="w-8 h-8 text-orange-500" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">24/7 Support</h3>
-              <p className="text-gray-600">
-                Round-the-clock customer service to assist you anytime
-              </p>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Shop By Categories */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="flex justify-between items-end mb-8">
+          <h2 className="text-2xl font-bold text-slate-900">Shop by categories</h2>
+          <Link to="/products" className="text-sm text-gray-500 hover:text-[#F59E0B] font-medium hidden md:block">
+            All departments →
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {categories.map((category, idx) => (
+            <Link key={category} to={`/products?category=${category}`} className="group bg-white rounded-2xl p-6 flex flex-col items-center justify-center border border-gray-100 hover:border-[#F59E0B] transition-all text-center">
+              <div className="w-24 h-24 bg-gray-50 rounded-full mb-4 flex items-center justify-center group-hover:scale-110 transition-transform">
+                {productsByCategory[category]?.[0]?.images?.[0] ? (
+                  <img src={productsByCategory[category][0].images[0]} alt={category} className="w-16 h-16 object-contain mix-blend-multiply" />
+                ) : (
+                  <Search className="w-8 h-8 text-gray-300" />
+                )}
+              </div>
+              <h3 className="font-semibold text-slate-900 text-sm">{category.charAt(0).toUpperCase() + category.slice(1)}</h3>
+            </Link>
+          ))}
+          {/* Static placeholders to fill grid if categories are few */}
+          {categories.length < 5 && (
+            <div className="bg-white rounded-2xl p-6 flex flex-col items-center justify-center border border-gray-100 text-center opacity-50">
+              <div className="w-24 h-24 bg-gray-50 rounded-full mb-4 flex items-center justify-center">
+                <ShoppingCart className="w-8 h-8 text-gray-300" />
+              </div>
+              <h3 className="font-semibold text-slate-900 text-sm">More coming...</h3>
+            </div>
+          )}
+        </div>
       </section>
 
-      {/* Products by Category */}
+      {/* Delivery Banner */}
+      <div className="container mx-auto px-4 mb-16">
+        <div className="bg-white rounded-2xl p-8 md:p-12 border border-gray-100 flex flex-col md:flex-row items-center justify-between overflow-hidden relative">
+          <div className="relative z-10 max-w-lg mb-8 md:mb-0">
+            <div className="text-[#F59E0B] font-bold text-xs tracking-wider uppercase mb-2">Worldwide Shipping</div>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4 uppercase">ShopEZ Delivers To You</h2>
+            <p className="text-gray-500 mb-6">Worldwide shipping. We deliver to over 100 countries and regions, right to your doorstep.</p>
+            <Link to="/products" className="inline-block bg-white text-slate-900 px-6 py-2.5 border-2 border-slate-200 rounded-full font-bold hover:border-slate-900 transition-colors text-sm">
+              View more
+            </Link>
+          </div>
+          <div className="relative w-full md:w-1/2 flex justify-center md:justify-end">
+            <div className="w-48 h-48 bg-orange-50 rounded-full flex items-center justify-center absolute -top-4 right-10 -z-10"></div>
+            <Truck className="w-40 h-40 text-[#F59E0B] opacity-80" />
+          </div>
+        </div>
+      </div>
+
+      {/* Recommended Products Section */}
+      {!loading && recommendedProducts.length > 0 && (
+        <section className="container mx-auto px-4 mb-16">
+          <div className="flex justify-between items-end mb-8">
+            <h2 className="text-2xl font-bold text-slate-900">Most viewed</h2>
+            <Link to="/products" className="text-sm text-gray-500 hover:text-[#F59E0B] font-medium hidden md:block">
+              View all →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {recommendedProducts.slice(0, 5).map((product) => (
+              <ProductCard key={product._id} product={product} onAddToCart={handleAddToCart} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Products by Category (Top Sellers look) */}
       {loading ? (
-        <section className="py-20 bg-gray-50">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold text-gray-800 mb-4">
-                Browse by Category
-              </h2>
-              <p className="text-xl text-gray-600">
-                Loading amazing products...
-              </p>
-            </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="bg-white rounded-lg shadow-lg overflow-hidden animate-pulse">
-                  <div className="h-48 bg-gray-300"></div>
-                  <div className="p-6">
-                    <div className="h-4 bg-gray-300 rounded mb-2"></div>
-                    <div className="h-3 bg-gray-300 rounded mb-3"></div>
-                    <div className="h-6 bg-gray-300 rounded mb-3"></div>
-                  </div>
-                </div>
-              ))}
-            </div>
+        <section className="container mx-auto px-4 py-16">
+          <div className="text-center">
+            <p className="text-gray-500">Loading amazing products...</p>
           </div>
         </section>
       ) : (
-        categories.map((category) => (
-          <section key={category} className="py-20 bg-gray-50">
-            <div className="container mx-auto px-4">
-              <div className="text-center mb-16">
-                <h2 className="text-4xl font-bold text-gray-800 mb-4">
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
-                </h2>
-                <p className="text-xl text-gray-600">
-                  Discover our handpicked selection of {category} products
-                </p>
-              </div>
-
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-                {productsByCategory[category].map((product) => (
-                  <Link
-                    key={product._id}
-                    to={`/product/${product._id}`}
-                    className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow block"
-                  >
-                    <div className="relative">
-                      <img
-                        src={product.images?.[0]}
-                        alt={product.name}
-                        className="w-full h-48 object-cover"
-                      />
-                      {product.discount > 0 && (
-                        <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-sm">
-                          {product.discount}% OFF
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-6">
-                      <h3 className="text-lg font-semibold mb-2">{product.name}</h3>
-                      <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
-                      <div className="flex items-center mb-3">
-                        <div className="flex items-center">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-4 h-4 ${
-                                i < Math.floor(product.ratings || 0)
-                                  ? 'text-yellow-400 fill-current'
-                                  : 'text-gray-300'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-sm text-gray-500 ml-2">
-                          ({product.stock || 0})
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-2xl font-bold text-orange-500">
-                            {formatCurrency(product.price * (1 - (product.discount || 0) / 100))}
-                          </span>
-                          {product.discount > 0 && (
-                            <span className="text-sm text-gray-500 line-through">
-                              {formatCurrency(product.price)}
-                            </span>
-                          )}
-                        </div>
-                        <button
-                          onClick={e => {
-                            e.preventDefault();
-                            handleAddToCart(product);
-                          }}
-                          className="bg-orange-500 text-white p-2 rounded-full hover:bg-orange-600 transition-colors"
-                        >
-                          <ShoppingCart className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-
-              <div className="text-center mt-12">
-                <Link
-                  to="/products"
-                  className="bg-orange-500 text-white px-8 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors"
-                >
-                  View All {category} Products
-                </Link>
-              </div>
+        categories.slice(0, 2).map((category) => (
+          <section key={category} className="container mx-auto px-4 mb-16">
+            <div className="flex justify-between items-end mb-8">
+              <h2 className="text-2xl font-bold text-slate-900">
+                Top sellers in {category.charAt(0).toUpperCase() + category.slice(1)}
+              </h2>
+              <Link to={`/products?category=${category}`} className="text-sm text-gray-500 hover:text-[#F59E0B] font-medium hidden md:block">
+                View all →
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {productsByCategory[category].slice(0, 5).map((product) => (
+                <ProductCard key={product._id} product={product} onAddToCart={handleAddToCart} />
+              ))}
             </div>
           </section>
         ))
       )}
 
-      {/* Testimonials */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-800 mb-4">
-              What Our Customers Say
-            </h2>
-            <p className="text-xl text-gray-600">
-              Read testimonials from satisfied ShopEZ customers
-            </p>
+      {/* Subscribe Section */}
+      <section className="container mx-auto px-4 py-16 mb-8">
+        <div className="bg-white rounded-3xl p-8 md:p-16 border border-gray-100 flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-orange-50 rounded-full blur-3xl -mr-20 -mt-20"></div>
+          <div className="max-w-xl relative z-10 mb-8 md:mb-0">
+            <div className="text-gray-400 font-bold text-xs tracking-wider uppercase mb-2">Stay up to date</div>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4 uppercase">Subscribe to the news</h2>
+            <p className="text-gray-500 mb-6">Be aware of all discounts and bargains! Don't miss your benefit.</p>
+            <div className="flex">
+              <input type="email" placeholder="Email address..." className="bg-gray-50 border border-gray-200 px-6 py-3 rounded-l-full w-full max-w-xs focus:outline-none focus:ring-1 focus:ring-[#F59E0B]" />
+              <button className="bg-slate-900 text-white px-8 py-3 rounded-r-full font-bold hover:bg-[#F59E0B] transition-colors">
+                Subscribe
+              </button>
+            </div>
           </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-gray-50 p-8 rounded-lg">
-              <div className="flex items-center mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                ))}
-              </div>
-              <p className="text-gray-700 mb-4">
-                "ShopEZ made finding Emily's birthday gift so easy! The personalized recommendations were spot on."
-              </p>
-              <div className="flex items-center">
-                <img
-                  src="https://pub-cdn.sider.ai/u/U0Y3HGZW7LV/web-coder/685ac1739ac9f9652371ce3f/resource/316582f4-49d6-4ab4-ab5d-7ff287bd0f96.jpg"
-                  alt="Sarah"
-                  className="w-12 h-12 rounded-full object-cover mr-4"
-                />
-                <div>
-                  <p className="font-semibold">Sarah M.</p>
-                  <p className="text-sm text-gray-500">Busy Professional</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gray-50 p-8 rounded-lg">
-              <div className="flex items-center mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                ))}
-              </div>
-              <p className="text-gray-700 mb-4">
-                "The seller dashboard is incredibly intuitive. Managing orders has never been easier!"
-              </p>
-              <div className="flex items-center">
-                <img
-                  src="https://pub-cdn.sider.ai/u/U0Y3HGZW7LV/web-coder/685ac1739ac9f9652371ce3f/resource/a9486e42-ffdd-4362-a61d-9dbd715c39d3.jpg"
-                  alt="John"
-                  className="w-12 h-12 rounded-full object-cover mr-4"
-                />
-                <div>
-                  <p className="font-semibold">John D.</p>
-                  <p className="text-sm text-gray-500">Online Seller</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gray-50 p-8 rounded-lg">
-              <div className="flex items-center mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                ))}
-              </div>
-              <p className="text-gray-700 mb-4">
-                "Fast shipping and excellent customer service. I'm a customer for life!"
-              </p>
-              <div className="flex items-center">
-                <img
-                  src="https://pub-cdn.sider.ai/u/U0Y3HGZW7LV/web-coder/685ac1739ac9f9652371ce3f/resource/fdd44e06-85dd-411f-85cf-ba2fef05ff1e.jpg"
-                  alt="Emily"
-                  className="w-12 h-12 rounded-full object-cover mr-4"
-                />
-                <div>
-                  <p className="font-semibold">Emily R.</p>
-                  <p className="text-sm text-gray-500">Fashion Enthusiast</p>
-                </div>
-              </div>
+          <div className="relative z-10 flex justify-center">
+            <div className="w-32 h-32 md:w-48 md:h-48 bg-gray-100 rounded-full flex items-center justify-center">
+              <Award className="w-16 h-16 md:w-20 md:h-20 text-[#F59E0B]" />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Call to Action */}
-      <section className="py-20 bg-gradient-to-r from-orange-500 to-red-500 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-4xl font-bold mb-4">
-            Ready to Start Shopping?
-          </h2>
-          <p className="text-xl mb-8">
-            Join thousands of satisfied customers and experience the ShopEZ difference
-          </p>
-          <div className="flex justify-center space-x-4">
-            <Link
-              to="/register"
-              className="bg-white text-orange-500 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
-            >
-              Create Account
-            </Link>
-            <Link
-              to="/products"
-              className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-orange-500 transition-colors"
-            >
-              Browse Products
-            </Link>
+      {/* Footer */}
+      <footer className="bg-[#FAF7F2] border-t border-gray-200 py-16">
+        <div className="container mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div>
+            <h4 className="font-bold text-slate-900 mb-4">Get to Know Us</h4>
+            <ul className="space-y-2 text-sm text-gray-500">
+              <li><Link to="/" className="hover:text-[#F59E0B]">Careers</Link></li>
+              <li><Link to="/" className="hover:text-[#F59E0B]">Blog</Link></li>
+              <li><Link to="/" className="hover:text-[#F59E0B]">About ShopEZ</Link></li>
+              <li><Link to="/" className="hover:text-[#F59E0B]">Investor Relations</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-bold text-slate-900 mb-4">Make Money with Us</h4>
+            <ul className="space-y-2 text-sm text-gray-500">
+              <li><Link to="/" className="hover:text-[#F59E0B]">Sell products on ShopEZ</Link></li>
+              <li><Link to="/" className="hover:text-[#F59E0B]">Sell on ShopEZ Business</Link></li>
+              <li><Link to="/" className="hover:text-[#F59E0B]">Become an Affiliate</Link></li>
+              <li><Link to="/" className="hover:text-[#F59E0B]">Advertise Your Products</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-bold text-slate-900 mb-4">ShopEZ Payment Products</h4>
+            <ul className="space-y-2 text-sm text-gray-500">
+              <li><Link to="/" className="hover:text-[#F59E0B]">ShopEZ Business Card</Link></li>
+              <li><Link to="/" className="hover:text-[#F59E0B]">Shop with Points</Link></li>
+              <li><Link to="/" className="hover:text-[#F59E0B]">Reload Your Balance</Link></li>
+              <li><Link to="/" className="hover:text-[#F59E0B]">ShopEZ Currency Converter</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-bold text-slate-900 mb-4">Let Us Help You</h4>
+            <ul className="space-y-2 text-sm text-gray-500">
+              <li><Link to="/" className="hover:text-[#F59E0B]">Your Account</Link></li>
+              <li><Link to="/" className="hover:text-[#F59E0B]">Your Orders</Link></li>
+              <li><Link to="/" className="hover:text-[#F59E0B]">Shipping Rates & Policies</Link></li>
+              <li><Link to="/" className="hover:text-[#F59E0B]">Returns & Replacements</Link></li>
+            </ul>
           </div>
         </div>
-      </section>
+        <div className="container mx-auto px-4 mt-12 pt-8 border-t border-gray-200 flex flex-col md:flex-row items-center justify-between text-xs text-gray-400">
+          <div className="flex space-x-6 mb-4 md:mb-0">
+            <Link to="/" className="hover:text-[#F59E0B]">Conditions of Use</Link>
+            <Link to="/" className="hover:text-[#F59E0B]">Privacy Notice</Link>
+            <Link to="/" className="hover:text-[#F59E0B]">Consumer Health Data</Link>
+          </div>
+          <p>© 2026-2027, ShopEZ.com, Inc. or its affiliates</p>
+        </div>
+      </footer>
     </div>
   );
 }

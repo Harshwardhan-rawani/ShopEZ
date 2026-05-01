@@ -24,3 +24,17 @@ exports.removeFromWishlist = async (req, res) => {
   await user.save();
   res.json(user.wishlist);
 };
+
+exports.updateCart = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    user.cart = req.body.cart || [];
+    await user.save();
+    
+    res.json(user.cart);
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating cart', error: error.message });
+  }
+};

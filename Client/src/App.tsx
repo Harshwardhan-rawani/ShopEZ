@@ -3,6 +3,7 @@
  */
 import { BrowserRouter, Route, Routes } from 'react-router'
 import { createContext, useContext, useEffect, useState } from 'react'
+import axios from 'axios'
 import Home from './pages/Home'
 import Products from './pages/Products'
 import ProductDetail from './pages/ProductDetail'
@@ -25,7 +26,7 @@ interface AppContextType {
   user: User | null;
   setUser: (user: User | null) => void;
   cart: CartItem[];
-  setCart: (cart: CartItem[]) => void;
+  setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
   addToCart: (product: Product) => void;
   removeFromCart: (productId: string) => void;
   updateCartQuantity: (productId: string, quantity: number) => void;
@@ -108,11 +109,11 @@ export default function App() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token && !user) {
-      fetch(`${import.meta.env.VITE_API_URL}/api/auth/me`, {
+      axios.get(`${import.meta.env.VITE_API_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-        .then(res => res.json())
-        .then(data => {
+        .then(res => {
+          const data = res.data;
           if (data.user) {
             setUser({
               id: data.user.id,
@@ -120,35 +121,77 @@ export default function App() {
               email: data.user.email,
               role: data.user.role
             });
+
+            // Merge local cart with database cart
+            setCart(prevCart => {
+              if ((!data.user.cart || data.user.cart.length === 0) && prevCart.length === 0) {
+                return prevCart;
+              }
+
+              const mergedCart = [...prevCart];
+              if (data.user.cart && data.user.cart.length > 0) {
+                data.user.cart.forEach((remoteItem: CartItem) => {
+                  const localItemIndex = mergedCart.findIndex(item => item.id === remoteItem.id);
+                  if (localItemIndex > -1) {
+                    // Update quantity if item exists in both
+                    mergedCart[localItemIndex] = {
+                      ...mergedCart[localItemIndex],
+                      quantity: Math.max(mergedCart[localItemIndex].quantity, remoteItem.quantity)
+                    };
+                  } else {
+                    mergedCart.push(remoteItem);
+                  }
+                });
+              }
+
+              // Sync the merged cart back to the database
+              syncCart(mergedCart, data.user.id);
+              return mergedCart;
+            });
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [user]);
+
+  /**
+   * Helper function to sync cart to backend
+   */
+  const syncCart = (newCart: CartItem[], userId: string) => {
+    axios.put(`${import.meta.env.VITE_API_URL}/api/users/${userId}/cart`, { cart: newCart })
+      .catch(err => console.error('Failed to sync cart:', err));
+  };
 
   /**
    * 添加商品到购物车
    */
   const addToCart = (product: Product) => {
     setCart(prevCart => {
+      let newCart;
       const existingItem = prevCart.find(item => item.id === product.id);
       if (existingItem) {
-        return prevCart.map(item =>
+        newCart = prevCart.map(item =>
           item.id === product.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
+      } else {
+        newCart = [...prevCart, {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          image: product.image,
+          quantity: 1,
+          sellerId: product.sellerId || '',
+          brand: product.brand || '',
+          category: product.category
+        }];
       }
-      return [...prevCart, {
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        image: product.image,
-        quantity: 1,
-        sellerId: product.sellerId || '',
-        brand: product.brand || '',
-        category: product.category
-      }];
+
+      if (user) {
+        syncCart(newCart, user.id);
+      }
+      return newCart;
     });
   };
 
@@ -156,7 +199,13 @@ export default function App() {
    * 从购物车移除商品
    */
   const removeFromCart = (productId: string) => {
-    setCart(prevCart => prevCart.filter(item => item.id !== productId));
+    setCart(prevCart => {
+      const newCart = prevCart.filter(item => item.id !== productId);
+      if (user) {
+        syncCart(newCart, user.id);
+      }
+      return newCart;
+    });
   };
 
   /**
@@ -167,11 +216,15 @@ export default function App() {
       removeFromCart(productId);
       return;
     }
-    setCart(prevCart =>
-      prevCart.map(item =>
+    setCart(prevCart => {
+      const newCart = prevCart.map(item =>
         item.id === productId ? { ...item, quantity } : item
-      )
-    );
+      );
+      if (user) {
+        syncCart(newCart, user.id);
+      }
+      return newCart;
+    });
   };
 
   const contextValue: AppContextType = {

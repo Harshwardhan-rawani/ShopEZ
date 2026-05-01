@@ -3,12 +3,13 @@
  */
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { useApp } from '../App'
+import { useApp, CartItem } from '../App'
 import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react'
 import * as api from '../services/api';
+import axios from 'axios';
 
 export default function Register() {
-  const { setUser } = useApp();
+  const { setUser, setCart } = useApp();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
@@ -92,7 +93,7 @@ export default function Register() {
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -103,10 +104,37 @@ export default function Register() {
       const response = await api.register(formData);
       setUser(response.user);
       localStorage.setItem('token', response.token);
+
+      setCart(prevCart => {
+        if ((!response.user.cart || response.user.cart.length === 0) && prevCart.length === 0) {
+          return prevCart;
+        }
+
+        const mergedCart = [...prevCart];
+        if (response.user.cart && response.user.cart.length > 0) {
+          response.user.cart.forEach((remoteItem: CartItem) => {
+            const localItemIndex = mergedCart.findIndex(item => item.id === remoteItem.id);
+            if (localItemIndex > -1) {
+              mergedCart[localItemIndex] = {
+                ...mergedCart[localItemIndex],
+                quantity: Math.max(mergedCart[localItemIndex].quantity, remoteItem.quantity)
+              };
+            } else {
+              mergedCart.push(remoteItem);
+            }
+          });
+        }
+
+        axios.put(`${import.meta.env.VITE_API_URL}/api/users/${response.user.id}/cart`, { cart: mergedCart })
+          .catch(err => console.error('Failed to sync cart:', err));
+
+        return mergedCart;
+      });
+
       navigate('/');
     } catch (err: any) {
-      setErrors({ 
-        submit: err.response?.data?.message || 'Registration failed' 
+      setErrors({
+        submit: err.response?.data?.message || 'Registration failed'
       });
     } finally {
       setIsLoading(false);
@@ -145,9 +173,8 @@ export default function Register() {
                     required
                     value={formData.firstName}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3 pl-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                      errors.firstName ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-4 py-3 pl-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${errors.firstName ? 'border-red-300' : 'border-gray-300'
+                      }`}
                     placeholder="First name"
                   />
                   <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -167,9 +194,8 @@ export default function Register() {
                     required
                     value={formData.lastName}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3 pl-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                      errors.lastName ? 'border-red-300' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-4 py-3 pl-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${errors.lastName ? 'border-red-300' : 'border-gray-300'
+                      }`}
                     placeholder="Last name"
                   />
                   <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -191,9 +217,8 @@ export default function Register() {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className={`w-full px-4 py-3 pl-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                    errors.email ? 'border-red-300' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-3 pl-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${errors.email ? 'border-red-300' : 'border-gray-300'
+                    }`}
                   placeholder="Enter your email"
                 />
                 <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -214,9 +239,8 @@ export default function Register() {
                   required
                   value={formData.phone}
                   onChange={handleChange}
-                  className={`w-full px-4 py-3 pl-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                    errors.phone ? 'border-red-300' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-3 pl-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${errors.phone ? 'border-red-300' : 'border-gray-300'
+                    }`}
                   placeholder="Enter your phone number"
                 />
                 <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -254,9 +278,8 @@ export default function Register() {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className={`w-full px-4 py-3 pl-12 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                    errors.password ? 'border-red-300' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-3 pl-12 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${errors.password ? 'border-red-300' : 'border-gray-300'
+                    }`}
                   placeholder="Create a password"
                 />
                 <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -283,9 +306,8 @@ export default function Register() {
                   required
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`w-full px-4 py-3 pl-12 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                    errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-4 py-3 pl-12 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent ${errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                    }`}
                   placeholder="Confirm your password"
                 />
                 <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />

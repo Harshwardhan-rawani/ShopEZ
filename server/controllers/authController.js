@@ -16,7 +16,8 @@ exports.register = async (req, res) => {
         id: user._id,
         name: `${user.firstName} ${user.lastName}`,
         email: user.email,
-        role: user.role
+        role: user.role,
+        cart: user.cart || []
       }
     });
   } catch (error) {
@@ -38,7 +39,8 @@ exports.login = async (req, res) => {
         id: user._id,
         name: `${user.firstName} ${user.lastName}`,
         email: user.email,
-        role: user.role
+        role: user.role,
+        cart: user.cart || []
       }
     });
   } catch (error) {
@@ -65,7 +67,8 @@ exports.me = async (req, res) => {
         role: user.role,
         address: user.address || '',
         city: user.city || '',
-        country: user.country || ''
+        country: user.country || '',
+        cart: user.cart || []
       }
     });
   } catch (err) {

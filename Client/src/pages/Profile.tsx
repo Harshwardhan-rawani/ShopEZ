@@ -3,7 +3,7 @@
  */
 import { useState, useEffect } from 'react'
 import { useApp } from '../App'
-import { User, Mail, Phone, MapPin, Calendar, Settings, Package, Heart, IndianRupee } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Calendar, Settings, Package, Heart, IndianRupee, Trash2, ShoppingCart } from 'lucide-react'
 import axios from 'axios'
 
 export default function Profile() {
@@ -90,68 +90,73 @@ export default function Profile() {
 
   if (!user) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Please log in to view your profile</h2>
+      <div className="container mx-auto px-4 py-32 text-center">
+        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+           <User className="w-10 h-10 text-gray-400" />
+        </div>
+        <h2 className="text-3xl font-black text-slate-900 mb-4">Account Access</h2>
+        <p className="text-gray-500 mb-8">Please log in to view and manage your profile.</p>
         <button
           onClick={() => window.location.href = '#/login'}
-          className="bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors"
+          className="bg-[#F59E0B] text-white px-10 py-4 rounded-full font-bold hover:bg-orange-600 transition-colors shadow-sm"
         >
-          Log In
+          Log In Now
         </button>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">My Account</h1>
+    <div className="container mx-auto px-4 py-12">
+      <div className="max-w-5xl mx-auto">
+        <h1 className="text-4xl font-black text-slate-900 mb-8 tracking-tight">My Account</h1>
 
-        {/* Navigation Tabs */}
-        <div className="border-b border-gray-200 mb-8">
-          <nav className="flex space-x-8">
-            {[
-              { key: 'profile', label: 'Profile', icon: User },
-              { key: 'orders', label: 'Orders', icon: Package },
-              { key: 'wishlist', label: 'Wishlist', icon: Heart }
-            ].map(tab => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key as any)}
-                  className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === tab.key
-                      ? 'border-orange-500 text-orange-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </nav>
+        {/* Navigation Tabs (Pill style) */}
+        <div className="flex space-x-2 bg-white p-2 rounded-2xl border border-gray-100 mb-10 w-fit shadow-sm overflow-x-auto">
+          {[
+            { key: 'profile', label: 'Profile', icon: User },
+            { key: 'orders', label: 'Orders', icon: Package },
+            { key: 'wishlist', label: 'Wishlist', icon: Heart }
+          ].map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key as any)}
+                className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-bold text-sm transition-all duration-200 whitespace-nowrap ${
+                  isActive
+                    ? 'bg-[#F59E0B] text-white shadow-md'
+                    : 'text-gray-500 hover:bg-orange-50 hover:text-orange-600'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Profile Tab */}
         {activeTab === 'profile' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold">Profile Information</h2>
+          <div className="bg-white rounded-3xl border border-gray-100 p-8 md:p-10 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 pb-6 border-b border-gray-100 gap-4">
+              <div>
+                 <h2 className="text-2xl font-black text-slate-900">Personal Information</h2>
+                 <p className="text-sm text-gray-500 mt-1">Manage your personal details and contact information.</p>
+              </div>
               <button
                 onClick={() => isEditing ? handleSaveProfile() : setIsEditing(true)}
-                className="flex items-center space-x-2 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+                className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-full font-bold transition-colors shadow-sm ${isEditing ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-[#FAF8F5] text-slate-900 hover:bg-gray-100'}`}
               >
                 <Settings className="w-4 h-4" />
                 <span>{isEditing ? 'Save Changes' : 'Edit Profile'}</span>
               </button>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 gap-8">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <User className="w-4 h-4 inline mr-2" />
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">
                   Full Name
                 </label>
                 {isEditing ? (
@@ -159,16 +164,18 @@ export default function Profile() {
                     type="text"
                     value={profileData.name}
                     onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-orange-500"
+                    className="w-full bg-[#FAF8F5] border-transparent focus:border-[#F59E0B] focus:ring-1 focus:ring-[#F59E0B] rounded-xl px-4 py-3 text-slate-900 font-bold transition-colors"
                   />
                 ) : (
-                  <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">{profileData.name}</p>
+                  <div className="flex items-center p-4 bg-[#FAF8F5] rounded-2xl">
+                     <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mr-4 shadow-sm text-gray-400"><User className="w-5 h-5"/></div>
+                     <p className="text-slate-900 font-bold">{profileData.name || 'Not provided'}</p>
+                  </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Mail className="w-4 h-4 inline mr-2" />
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">
                   Email Address
                 </label>
                 {isEditing ? (
@@ -176,16 +183,18 @@ export default function Profile() {
                     type="email"
                     value={profileData.email}
                     onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-orange-500"
+                    className="w-full bg-[#FAF8F5] border-transparent focus:border-[#F59E0B] focus:ring-1 focus:ring-[#F59E0B] rounded-xl px-4 py-3 text-slate-900 font-bold transition-colors"
                   />
                 ) : (
-                  <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">{profileData.email}</p>
+                  <div className="flex items-center p-4 bg-[#FAF8F5] rounded-2xl">
+                     <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mr-4 shadow-sm text-gray-400"><Mail className="w-5 h-5"/></div>
+                     <p className="text-slate-900 font-bold">{profileData.email || 'Not provided'}</p>
+                  </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Phone className="w-4 h-4 inline mr-2" />
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">
                   Phone Number
                 </label>
                 {isEditing ? (
@@ -193,19 +202,19 @@ export default function Profile() {
                     type="tel"
                     value={profileData.phone}
                     onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-orange-500"
+                    className="w-full bg-[#FAF8F5] border-transparent focus:border-[#F59E0B] focus:ring-1 focus:ring-[#F59E0B] rounded-xl px-4 py-3 text-slate-900 font-bold transition-colors"
                     placeholder="Enter phone number"
                   />
                 ) : (
-                  <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
-                    {profileData.phone || 'Not provided'}
-                  </p>
+                  <div className="flex items-center p-4 bg-[#FAF8F5] rounded-2xl">
+                     <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mr-4 shadow-sm text-gray-400"><Phone className="w-5 h-5"/></div>
+                     <p className="text-slate-900 font-bold">{profileData.phone || 'Not provided'}</p>
+                  </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <MapPin className="w-4 h-4 inline mr-2" />
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">
                   Address
                 </label>
                 {isEditing ? (
@@ -213,13 +222,14 @@ export default function Profile() {
                     type="text"
                     value={profileData.address}
                     onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-orange-500"
+                    className="w-full bg-[#FAF8F5] border-transparent focus:border-[#F59E0B] focus:ring-1 focus:ring-[#F59E0B] rounded-xl px-4 py-3 text-slate-900 font-bold transition-colors"
                     placeholder="Enter address"
                   />
                 ) : (
-                  <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
-                    {profileData.address || 'Not provided'}
-                  </p>
+                  <div className="flex items-center p-4 bg-[#FAF8F5] rounded-2xl">
+                     <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mr-4 shadow-sm text-gray-400"><MapPin className="w-5 h-5"/></div>
+                     <p className="text-slate-900 font-bold">{profileData.address || 'Not provided'}</p>
+                  </div>
                 )}
               </div>
             </div>
@@ -229,47 +239,56 @@ export default function Profile() {
         {/* Orders Tab */}
         {activeTab === 'orders' && (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold">Order History</h2>
+            <h2 className="text-2xl font-black text-slate-900 mb-6">Order History</h2>
             {orders.length === 0 ? (
-              <div className="text-gray-500 text-center py-8">No orders found.</div>
+              <div className="bg-white rounded-3xl border border-gray-100 p-16 text-center shadow-sm">
+                 <Package className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                 <p className="text-xl font-bold text-slate-900 mb-2">No orders found</p>
+                 <p className="text-gray-500">Looks like you haven't made any purchases yet.</p>
+              </div>
             ) : (
               orders.map(order => (
-                <div key={order._id} className="bg-white rounded-lg shadow-md p-6">
-                  <div className="flex items-center justify-between mb-4">
+                <div key={order._id} className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
+                  <div className="p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between bg-[#FAF8F5] border-b border-gray-100 gap-4">
                     <div>
-                      <h3 className="font-semibold">Order {order._id}</h3>
-                      <p className="text-sm text-gray-600 flex items-center">
+                      <h3 className="font-black text-slate-900 text-lg">Order #{order._id.slice(-8).toUpperCase()}</h3>
+                      <p className="text-sm font-medium text-gray-500 flex items-center mt-1">
                         <Calendar className="w-4 h-4 mr-1" />
                         {new Date(order.createdAt).toLocaleDateString()}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    <div className="md:text-right flex flex-col md:items-end">
+                      <span className={`inline-block px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider mb-2 border ${
                         order.status === 'delivered'
-                          ? 'bg-green-100 text-green-800'
+                          ? 'bg-green-100 text-green-700 border-green-200'
                           : order.status === 'shipped'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-yellow-100 text-yellow-800'
+                          ? 'bg-blue-100 text-blue-700 border-blue-200'
+                          : 'bg-yellow-100 text-yellow-700 border-yellow-200'
                       }`}>
                         {order.status}
                       </span>
-                      <p className="text-lg font-semibold mt-1 flex items-center "><IndianRupee className='w-4'/>{order.total?.toFixed(2)}</p>
+                      <p className="text-xl font-black text-[#F59E0B] flex items-center"><IndianRupee className='w-4'/>{order.total?.toFixed(2)}</p>
                     </div>
                   </div>
-                  <div className="border-t pt-4">
-                    {order.items.map((item: any, index: number) => (
-                      <div key={index} className="flex items-center space-x-3">
-                        <img
-                          src={item.image || ''}
-                          alt={item.name || ''}
-                          className="w-12 h-12 object-cover rounded"
-                        />
-                        <div>
-                          <p className="font-medium">{item.name || item.product}</p>
-                          <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+                  <div className="p-6 md:p-8">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-4">Purchased Items</h4>
+                    <div className="space-y-4">
+                      {order.items.map((item: any, index: number) => (
+                        <div key={index} className="flex items-center space-x-4">
+                          <div className="w-16 h-16 bg-[#FAF8F5] rounded-xl p-2 flex items-center justify-center">
+                             <img
+                               src={item.image || ''}
+                               alt={item.name || ''}
+                               className="max-h-full object-contain mix-blend-multiply"
+                             />
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900 line-clamp-1">{item.name || item.product}</p>
+                            <p className="text-sm font-medium text-gray-500">Qty: {item.quantity}</p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
               ))
@@ -279,35 +298,42 @@ export default function Profile() {
 
         {/* Wishlist Tab */}
         {activeTab === 'wishlist' && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold">My Wishlist</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div>
+            <h2 className="text-2xl font-black text-slate-900 mb-6">My Wishlist</h2>
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {wishlist.map(item => (
-                <div key={item.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                  <img
-                    src={item.image}
-                    alt={item.title || item.name}
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="p-4">
-                    <h3 className="font-semibold mb-2">{item.title || item.name}</h3>
-                    <p className="text-lg font-bold text-orange-500 mb-3">${item.price}</p>
-                    <div className="flex space-x-2">
-                      <button className="flex-1 bg-orange-500 text-white py-2 px-4 rounded-lg hover:bg-orange-600 transition-colors">
-                        Add to Cart
-                      </button>
-                      <button
+                <div key={item.id} className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm flex flex-col group hover:border-orange-200 transition-colors">
+                  <div className="p-4 bg-[#FAF8F5] flex items-center justify-center h-48 relative">
+                    <img
+                      src={item.image}
+                      alt={item.title || item.name}
+                      className="max-h-full object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-110"
+                    />
+                    <button
                         onClick={() => handleRemoveWishlist(item.id)}
-                        className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors shadow-sm"
+                        title="Remove from wishlist"
                       >
-                        <Heart className="w-5 h-5 text-red-500 fill-current" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
+                  </div>
+                  <div className="p-5 flex-grow flex flex-col justify-between">
+                    <div>
+                      <h3 className="font-bold text-slate-900 mb-2 line-clamp-2">{item.title || item.name}</h3>
+                      <p className="text-xl font-black text-[#F59E0B] mb-4">${item.price}</p>
                     </div>
+                    <button className="w-full bg-[#FAF8F5] text-slate-900 py-3 rounded-full font-bold hover:bg-[#F59E0B] hover:text-white transition-colors flex items-center justify-center shadow-sm">
+                       <ShoppingCart className="w-4 h-4 mr-2" /> Add to Cart
+                    </button>
                   </div>
                 </div>
               ))}
               {wishlist.length === 0 && (
-                <div className="text-gray-500 text-center py-8 col-span-full">No items in wishlist.</div>
+                <div className="col-span-full bg-white rounded-3xl border border-gray-100 p-16 text-center shadow-sm">
+                   <Heart className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                   <h3 className="text-xl font-bold text-slate-900 mb-2">Your wishlist is empty</h3>
+                   <p className="text-gray-500">Save items you love to view them later.</p>
+                </div>
               )}
             </div>
           </div>

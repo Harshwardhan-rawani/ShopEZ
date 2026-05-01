@@ -80,12 +80,13 @@ html {
 
 body {
   color: hsl(var(--foreground));
-  background-color: hsl(var(--background));
+  background-color: #FAF8F5;
+  /* Replaced hsl(var(--background)) with exact modern hex */
   overscroll-behavior: none;
   font-synthesis-weight: none;
 }
 
-html > body * {
+html>body * {
   border-color: hsl(var(--border));
 }
 
