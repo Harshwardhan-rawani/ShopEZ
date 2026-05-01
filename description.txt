@@ -1,0 +1,55 @@
+ShopEZ Online Shopping - Full-Stack E-commerce Platform
+
+A comprehensive full-stack e-commerce solution built with modern web technologies, featuring a React TypeScript frontend and Node.js/Express backend with MongoDB database. The platform provides a complete online shopping experience with advanced features for both customers and sellers.
+
+Key Features & Technical Highlights:
+
+Frontend (React + TypeScript + Vite):
+• Responsive UI built with React 18, TypeScript, and Tailwind CSS for modern, mobile-first design
+• State management using React hooks and context API for seamless user experience
+• Component-based architecture with reusable UI components (shadcn/ui library)
+• Real-time form validation and error handling with React Hook Form
+• Responsive design with mobile-first approach using custom hooks for device detection
+
+Backend (Node.js + Express + MongoDB):
+• RESTful API architecture with Express.js and MongoDB for scalable data management
+• JWT-based authentication system with middleware for protected routes
+• Comprehensive user management with role-based access (customer/seller)
+• Advanced product management with categories, search, and filtering capabilities
+• Order processing system with status tracking (pending, processing, shipping, delivered)
+• Payment integration with Cashfree payment gateway for secure transactions
+
+Core Functionality:
+• User Authentication & Authorization: Secure login/register with JWT tokens and role-based access control
+• Product Management: CRUD operations for products with image upload, inventory tracking, and category management
+• Shopping Cart: Persistent cart functionality with real-time price calculations and quantity management
+• Order Management: Complete order lifecycle from cart to delivery with status updates
+• Payment Processing: Integrated Cashfree payment gateway with success/failure handling
+• Seller Dashboard: Analytics dashboard showing sales metrics, revenue tracking, and order management
+• Rating & Review System: User-generated reviews with star ratings, edit/delete functionality
+• Search & Filtering: Advanced product search with category and price filtering
+
+Advanced Features:
+• Real-time Analytics: Sales tracking, revenue calculations, and performance metrics for sellers
+• Order Status Management: Multi-stage order tracking with automated status updates
+• Currency Integration: Indian Rupee (₹) support throughout the application
+• Responsive Design: Mobile-optimized interface with adaptive layouts
+• Error Handling: Comprehensive error management with user-friendly notifications
+• Loading States: Skeleton loading components for improved user experience
+
+Technologies & Tools:
+• Frontend: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui, React Hook Form
+• Backend: Node.js, Express.js, MongoDB, Mongoose ODM, JWT
+• Payment: Cashfree Payment Gateway API
+• Development: Git version control, ESLint, PostCSS, Vercel deployment
+• Database: MongoDB with Mongoose schema design and data validation
+
+Architecture & Best Practices:
+• MVC architecture with separation of concerns
+• RESTful API design with proper HTTP status codes
+• Database schema optimization with proper indexing
+• Security best practices including input validation and authentication middleware
+• Code modularity with reusable components and utility functions
+• Performance optimization with lazy loading and efficient state management
+
+This project demonstrates proficiency in full-stack development, API design, database management, payment integration, and modern web development practices, making it suitable for showcasing comprehensive software engineering skills.
